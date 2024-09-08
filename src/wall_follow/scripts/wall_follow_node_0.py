@@ -5,19 +5,34 @@ import numpy as np
 from sensor_msgs.msg import LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped
 
+
 class WallFollow(Node):
     """ 
     Implement Wall Following on the car
     """
+
     def __init__(self):
         super().__init__('wall_follow_node')
+        self.get_logger().info("WallFollow node initialized")
 
+        # Topics
         lidarscan_topic = '/scan'
         drive_topic = '/drive'
 
-        # Subscribers and publishers
-        self.scan_subscriber = self.create_subscription(LaserScan, lidarscan_topic, self.scan_callback, 10)
-        self.drive_publisher = self.create_publisher(AckermannDriveStamped, drive_topic, 10)
+        # Create publisher for driving commands
+        self.drive_publisher = self.create_publisher(
+            AckermannDriveStamped,
+            drive_topic,
+            10
+        )
+
+        # Create subscriber for LiDAR data
+        self.scan_subscriber = self.create_subscription(
+            LaserScan,
+            lidarscan_topic,
+            self.scan_callback,
+            10
+        )
 
         # PID gains
         self.kp = 1.0
@@ -29,11 +44,11 @@ class WallFollow(Node):
         self.prev_error = 0.0
 
         # Desired distance from the wall
-        self.desired_distance = 1.0
+        self.desired_distance = 0.5
 
     def get_range(self, range_data, angle):
         """
-        Simple helper to return the corresponding range measurement at a given angle. Make sure you take care of NaNs and infs.
+        Helper to return the corresponding range measurement at a given angle. Make sure to handle NaNs and infs.
 
         Args:
             range_data: single range array from the LiDAR
@@ -53,7 +68,7 @@ class WallFollow(Node):
 
     def get_error(self, range_data, dist):
         """
-        Calculates the error to the wall. Follow the wall to the left (going counter clockwise in the Levine loop). You potentially will need to use get_range()
+        Calculates the error to the wall. Follow the wall to the left.
 
         Args:
             range_data: single range array from the LiDAR
@@ -65,8 +80,8 @@ class WallFollow(Node):
         # Calculate the error using LIDAR data at specific angles
         theta = np.pi / 4  # 45 degrees
 
-        range_90 = self.get_range(range_data, np.pi/2)  # Distance to the left wall
-        range_theta = self.get_range(range_data, np.pi/2 + theta)  # Distance at 45 degrees to the front-left
+        range_90 = self.get_range(range_data, np.pi / 2)  # Distance to the left wall
+        range_theta = self.get_range(range_data, np.pi / 2 + theta)  # Distance at 45 degrees to the front-left
 
         # Error based on the desired distance
         alpha = np.arctan((range_theta * np.cos(theta) - range_90) / (range_theta * np.sin(theta)))
@@ -86,12 +101,11 @@ class WallFollow(Node):
         Returns:
             None
         """
-        # Calculate PID control
+        # PID controller logic
         self.integral += error
         derivative = error - self.prev_error
 
         control = self.kp * error + self.ki * self.integral + self.kd * derivative
-
         self.prev_error = error
 
         # Create and publish drive message
@@ -111,20 +125,28 @@ class WallFollow(Node):
         Returns:
             None
         """
+        self.get_logger().info("Processing scan data")
         error = self.get_error(msg, self.desired_distance)
-        velocity = 1.0  # Fixed or dynamically adjusted speed
+        velocity = 0.5  # Set to a constant value or compute based on error
 
         self.pid_control(error, velocity)
 
+        # Print error and control signals for debugging
+        self.get_logger().info(f"Error: {error}, Velocity: {velocity}, Steering Angle: {self.prev_error}")
+
+
 def main(args=None):
     rclpy.init(args=args)
-    print("WallFollow Initialized")
+    print("WallFollow Node Starting...")
+
     wall_follow_node = WallFollow()
+
     rclpy.spin(wall_follow_node)
 
     # Destroy the node explicitly
     wall_follow_node.destroy_node()
     rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()

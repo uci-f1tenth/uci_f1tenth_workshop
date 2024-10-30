@@ -14,13 +14,13 @@ class SafetyNode(Node):
         self.get_logger().info('Safety node has started.')
         self.speed = 0.0
         self.publisher_ = self.create_publisher(AckermannDriveStamped, '/drive', 10)
-
+        
         self.subscription_odom = self.create_subscription(
             Odometry,
             '/ego_racecar/odom',
             self.odom_callback,
             10)
-
+        
         self.subscription_scan = self.create_subscription(
             LaserScan,
             '/scan',
@@ -44,7 +44,7 @@ class SafetyNode(Node):
         if min_ttc < 1.0:
             brake_msg = AckermannDriveStamped()
             brake_msg.drive.speed = 0.0
-            brake_msg.drive.acceleration = -5.0
+            brake_msg.drive.acceleration = -5.0  
             self.publisher_.publish(brake_msg)
             self.get_logger().info('Brake msg is published: stopping the vehicle.')
 

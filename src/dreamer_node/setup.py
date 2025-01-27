@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'dreamer_node = dreamer.dreamer_node:main',
+            'dreamer_node = agents.dreamer_agent:main',
         ],
     },
 )

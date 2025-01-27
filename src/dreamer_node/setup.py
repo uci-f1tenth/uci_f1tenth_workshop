@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-package_name = 'dreamer'
+package_name = 'dreamer_node'
 
 setup(
     name=package_name,
@@ -21,7 +21,6 @@ setup(
     entry_points={
         'console_scripts': [
             'dreamer_node = dreamer.dreamer_node:main',
-            'dotest = dreamer.dotest:main',
         ],
     },
 )

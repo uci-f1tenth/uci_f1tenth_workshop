@@ -73,7 +73,7 @@ source /opt/ros/foxy/setup.bash
 source install/setup.bash
 colcon build --packages-select dreamer_node
 source install/setup.bash
-ros2 run agents dreamer_agent
+ros2 run dreamer_node dreamer_node
 ```
 ---
 

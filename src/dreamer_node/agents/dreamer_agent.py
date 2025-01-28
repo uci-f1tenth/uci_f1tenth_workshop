@@ -52,7 +52,7 @@ class Dreamer(Node):
             assert f'Error: last laser scan time is {last_scan_time}. Limit = 10Hz'
             return
         
-        # receive LiDAR scan rte
+        # receive LiDAR scan rate
         self.time = current_stamp
         print('dreamer received LIDAR scan @ rate:', last_scan_time / 1e9) # TODO: debug for scan rate
         observations = dict()
@@ -63,12 +63,6 @@ class Dreamer(Node):
         # Gausian noise(optional implementation)
         obs_lidar = observations['lidar'][:1080]
         
-        # optional noised
-        # extra_noise_stddev = 0.3 # 0.3m
-        # extra_noise = np.random.normal(0, extra_noise_stddev, obs_lidar.shape)
-        #obs_lidar_noised = obs_lidar + extra_noise
-        #obs_lidar_noised = np.clip(obs_lidar_noised, 0, None)
-
         observations['lidar'] = obs_lidar # obs_lidar_noised for noise
         scan_noised = scan_msg
         scan_noised.ranges = observations['lidar']

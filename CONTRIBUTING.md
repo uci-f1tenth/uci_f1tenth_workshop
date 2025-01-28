@@ -124,5 +124,3 @@ ros2 run dreamer_node dreamer_node
 
 ---
 
-Thank you for contributing to the F1TENTH DreamerV3 Project! Together, we can push the boundaries of autonomous racing and reinforcement learning.
-

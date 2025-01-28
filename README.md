@@ -6,6 +6,9 @@
 
 # Set Up
 Go into the gym directory you installed the program in.
+```
+cd uci-f1tenth-workshop/f1tenth_gym_ros
+```
 
 Run shell script:
 ```

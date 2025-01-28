@@ -37,6 +37,9 @@ ros2 launch f1tenth_gym_ros gym_bridge_launch.py
 ```
 
 ## Building a node
+
+After you run the above scrips, your terminal would be busy running the gym_bridge_launch.py. Hence, pull up a new terminal window and go to the project directory BEFORE you run the below commands.
+
 *To build a node in ROS2, you must be within the vm root.
 If you are not in the machine either run the script again, or run:
 ```bash
@@ -62,6 +65,9 @@ ros2 run your_package your_executable
 ```
 
 ## Example execution of the dreamer node
+
+After you run the above scrips, your terminal would be busy running the gym_bridge_launch.py. Hence, pull up a new terminal window and go to the project directory BEFORE you run the below commands.
+
 ```bash
 source /opt/ros/foxy/setup.bash
 source install/setup.bash

@@ -1,5 +1,7 @@
 # Contributing to UCI_F1TENTH
 
+This repository is intended for academic and research purposes at the University of California, Irvine. All contributions must adhere to applicable copyright laws, licensing agreements, and UCI’s academic integrity policies. Unauthorized use, distribution, or modification of this code in violation of these guidelines is strictly prohibited. By contributing, you agree to respect the intellectual property of others and ensure your work complies with academic use standards.
+
 ## Setup Instructions for ROS gym environment.
 To use the NoVNC script for remote visualization of your simulations, follow these steps:
 

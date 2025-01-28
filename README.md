@@ -17,14 +17,7 @@ Please reference: [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution g
 ## Testing
 
 - [x] implemented f1tenth gym for testing environment.
-- [ ] waiting on issac sim implementation for better environment.
-
-## Types of changes
-
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [x] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to change)
-
+- [ ] waiting on issac sim implementation for better simulation environment.
 ## Checklist:
 
 - [x] basic structure implementation(bare bones)

@@ -104,9 +104,10 @@ ros2 run dreamer_node dreamer_node
 
 ### Pull Requests
 1. Fork the repository and create a new branch for your feature or fix.
-2. Ensure your branch is up-to-date with the `main` branch.
-3. Submit a pull request with a clear description of your changes.
-4. Address any comments or requested changes from reviewers promptly.
+2. MAKE YOUR OWN BRANCH PLEASE according to your name or the issue you are working on.
+3. Ensure your branch is up-to-date with the `main` branch.
+4. Submit a pull request with a clear description of your changes.
+5. Address any comments or requested changes from reviewers promptly.
 
 ### Testing
 - Ensure your code passes all tests before submitting a pull request.

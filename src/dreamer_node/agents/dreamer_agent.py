@@ -72,6 +72,16 @@ class Dreamer(Node):
         scan_noised.ranges = np.flip(self.observations["lidar"])
         self.pub_scan.publish(scan_noised)
 
+        # TODO: Port dreamer here:
+        # agent_action = self.agent.get_action(scan)
+        # steering = float(agent_action[0])
+        # speed = float(agent_action[1])
+        # speed = min(float(agent_action[1]) / 2, 1.5)
+
+
+        drive_msg = self._convert_action(steering, speed)
+        self.pub_drive.publish(drive_msg)
+
     def lidar_postproccess(self, lidar_data: LaserScan):
         """
         Processes raw LaserScan data to extract usable information for navigation.
@@ -106,6 +116,25 @@ class Dreamer(Node):
         extra_noise = np.random.normal(0, extra_noise_stddev, 1080)
         return obs_lidar + extra_noise # adding noise (remove extra_noise to get rid of noise)
 
+    def _convert_action(self, steering_angle, speed) -> AckermannDriveStamped:
+        """
+        Converts steering/speed to AckermannDriveStamped.
+
+        Creates an AckermannDriveStamped message from steering angle (rad) and speed.
+        Prints the published action for debugging.
+
+        Args:
+            steering_angle: Desired steering angle (rad). Positive: left, negative: right.
+            speed: Desired speed (m/s). Positive: forward.
+
+        Returns:
+            AckermannDriveStamped message.
+        """
+        drive_msg = AckermannDriveStamped()
+        drive_msg.drive.steering_angle = steering_angle
+        drive_msg.drive.speed = speed
+        print('dreamer published action: steering_angle = ', steering_angle, "; speed = ", speed)
+        return drive_msg
 
 def main(args=None):
     rclpy.init(args=args)

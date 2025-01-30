@@ -1,4 +1,5 @@
 import datetime
+# TODO: get rid of this
 import gym
 import numpy as np
 import uuid

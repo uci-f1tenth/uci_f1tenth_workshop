@@ -86,7 +86,6 @@ class Dreamer(Node):
         #obs_lidar_noised = obs_lidar + extra_noise
         #obs_lidar_noised = np.clip(obs_lidar_noised, 0, None)
         
-        observations['lidar'] = obs_lidar # obs_lidar_noised for noise
         scan_noised = scan_msg
         scan_noised.ranges = observations['lidar']
 

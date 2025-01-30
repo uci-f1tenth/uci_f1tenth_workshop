@@ -343,6 +343,7 @@ if __name__ == "__main__":
     parser.add_argument("--configs", nargs="+")
     args, remaining = parser.parse_known_args()
     configs = yaml.safe_load(
+        # TODO: edit this output
         (pathlib.Path(sys.argv[0]).parent / "configs.yaml").read_text()
     )
 

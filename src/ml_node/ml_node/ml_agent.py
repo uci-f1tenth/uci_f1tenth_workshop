@@ -16,7 +16,7 @@ class MLAgent(Node):
         self.is_real = False
 
         # Topics & Subs, Pubs
-        self.lidarscan_topic = '/fake_scan'  # /scan or /fake_scan
+        self.lidarscan_topic = '/scan'  # /scan or /fake_scan
         drive_topic = '/drive'
 
         # Subscribe to scan
@@ -35,7 +35,7 @@ class MLAgent(Node):
         # TODO: change path
         package_share_directory = os.path.join(os.path.dirname(__file__), '..', 'resource')
         model_path = os.path.join(package_share_directory, 'mega_dagger.pkl')
-        self.agent.load_state_dict(torch.load(model_path, map_location=device))
+        self.agent.load_state_dict(torch.load(model_path, map_location=device, weights_only=True))
 
     def scan_callback(self, scan_msg):
         scan = np.array(scan_msg.ranges[::10]).flatten()  # 108

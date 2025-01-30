@@ -97,6 +97,9 @@ class Dreamer(Node):
         # speed = float(agent_action[1])
         # speed = min(float(agent_action[1]) / 2, 1.5)
 
+        steering = 0.0
+        speed = 1.0
+
         # TODO: Set steering and speed variables
         drive_msg = self._convert_action(steering, speed)
         self.pub_drive.publish(drive_msg)

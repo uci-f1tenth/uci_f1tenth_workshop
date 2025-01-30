@@ -78,14 +78,12 @@ class Dreamer(Node):
         #print('dreamer received LIDAR scan @ rate:', last_scan_time / 1e9) # TODO: debug for scan rate
         
         # Gausian noise(optional implementation)
-        observations = {'lidar': lidar_data[:1000].tolist()}
-        
         # optional noised
         # extra_noise_stddev = 0.3 # 0.3m
         # extra_noise = np.random.normal(0, extra_noise_stddev, obs_lidar.shape)
         #obs_lidar_noised = obs_lidar + extra_noise
         #obs_lidar_noised = np.clip(obs_lidar_noised, 0, None)
-        
+        observations['lidar'] = obs_lidar # obs_lidar_noised for noise
         scan_noised = scan_msg
         scan_noised.ranges = observations['lidar']
 

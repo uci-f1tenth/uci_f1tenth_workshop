@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-package_name = 'safety_node'
+package_name = 'ml_node'
 
 setup(
     name=package_name,
@@ -10,6 +10,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/models', ['models/mega_dagger.pkl']),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -19,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'safety_node = safety_node.safety_node:main',
+            'ml_node = ml_node.ml_agent:main',
         ],
     },
 )

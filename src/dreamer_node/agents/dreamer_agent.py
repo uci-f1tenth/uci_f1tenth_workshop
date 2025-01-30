@@ -67,16 +67,22 @@ class Dreamer(Node):
         """
 
         self.observations["lidar"] = self.lidar_postproccess(scan_msg)
-        
-        scan_noised = scan_msg
-        scan_noised.ranges = np.flip(self.observations["lidar"])
-        self.pub_scan.publish(scan_noised)
+
+        if self.observations["lidar"] is not None and len(self.observations["lidar"]) > 0:  #Check for None and empty array
+            scan_noised = scan_msg
+            scan_noised.ranges = list(np.flip(self.observations["lidar"]).astype(float))
+            self.pub_scan.publish(scan_noised)
+        else:
+            self.get_logger().warn("Skipping scan: No valid LiDAR data received.")
 
         # TODO: Port dreamer here:
         # agent_action = self.agent.get_action(scan)
         # steering = float(agent_action[0])
         # speed = float(agent_action[1])
         # speed = min(float(agent_action[1]) / 2, 1.5)
+
+        steering = 0.0
+        speed = 1.0
 
         # TODO: Set steering and speed variables
         drive_msg = self._convert_action(steering, speed)
@@ -107,11 +113,10 @@ class Dreamer(Node):
         self.time = current_stamp
         print('dreamer received LIDAR scan @ rate:', last_scan_time / 1e9) # TODO: debug for scan rate
 
-        raw_data = list(np.flip(np.array(lidar_data.ranges, dtype=float)))
-        assert len(raw_data['lidar']) > 0, "Missing observations. Are you sure everything is linked properly?"
+        raw_data = list(np.array(lidar_data.ranges, dtype=float))
         print("observation = ", raw_data); # TODO: debug range
 
-        obs_lidar = raw_data[0:1080,]
+        obs_lidar = raw_data[0:1080]
         extra_noise_stddev = 0.3 # 0.3m
         extra_noise = np.random.normal(0, extra_noise_stddev, 1080)
         return obs_lidar + extra_noise # adding noise (remove extra_noise to get rid of noise)

@@ -1,0 +1,14 @@
+torch
+matplotlib
+ruamel.yaml
+moviepy
+einops
+protobuf
+gym
+mujoco
+dm_control
+memory_maze
+crafter
+opencv-python
+numpy
+tensorboard

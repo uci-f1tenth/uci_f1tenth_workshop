@@ -7,9 +7,19 @@ import numpy as np
 from sensor_msgs.msg import LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped
 
-from tools.constants import Constants
+import os
+import argparse
+import ruamel.yaml as yaml
+from ruamel.yaml import YAML
+import pathlib
 
-class Dreamer(Node):
+import gym
+
+import torch
+from util.constants import Constants
+from dreamer.dream import Dreamer
+
+class DreamerRacer(Node):
     """ 
     Implement Dreamer on the car
     """
@@ -48,6 +58,36 @@ class Dreamer(Node):
             self.const.LIDAR_TOPIC,
             10
         )
+ 
+        # load configuration file
+        config_path = os.path.join(pathlib.Path(__file__).parent.parent, "dreamer", "config.yaml") # Relative path
+
+        try:
+            # Use the YAML class to load the config
+            yaml_loader = YAML(typ='safe', pure=True) # Create a yaml object
+            self.config = yaml_loader.load(open(config_path).read()) # Load using the object
+            chosen_config = "f1tenth"
+            self.recursive_update(self.config["defaults"], self.config[chosen_config])
+            self.config = argparse.Namespace(**self.config[chosen_config])
+        except FileNotFoundError as e:
+            print(f"Error loading config: {e}. Make sure the path is correct.")
+            exit()
+        except Exception as e:
+            print(f"Error loading config: {e}")
+            exit()
+
+        # dreamer
+        device = torch.device(self.const.DEVICE) # make this CPU in constants.py if you do not have NVIDIA GPU
+        observation_space = gym.spaces.Box(-np.inf, np.inf, shape=(1080,), dtype=np.float32)
+        action_space = gym.spaces.Box(-1.0, 1.0, shape=(2,), dtype=np.float32)  # Assuming steering and speed are between -1 and 1
+
+        self.agent = Dreamer(
+            observation_space,
+            action_space,
+            self.config,
+            None,
+            None
+        ).to(device)
     
     def scan_callback(self, scan_msg: LaserScan):
         """
@@ -75,6 +115,31 @@ class Dreamer(Node):
             scan_noised = scan_msg
             scan_noised.ranges = list(np.flip(self.observations["lidar"]).astype(float))
             self.pub_scan.publish(scan_noised)
+
+            # Dreamer Integration
+            observation = np.array(self.observations["lidar"])
+            self.scan_buffer.append(observation)
+
+            if len(self.scan_buffer) >= self.sequence_length:
+                observation = np.array(self.scan_buffer[-self.sequence_length:])
+                self.scan_buffer = self.scan_buffer[-self.sequence_length:]
+                observation_tensor = torch.as_tensor(observation, dtype=torch.float32, device=self.agent._config.device).unsqueeze(0)
+
+                try:
+                    policy_output, _ = self.agent(observation_tensor, None, None, training=False)  # No reset or state needed
+                    action = policy_output["action"].cpu().numpy()[0] # Get the action and convert it to numpy array
+
+                    steering = float(action[0])  # Extract steering (float)
+                    speed = float(action[1])     # Extract speed (float)
+                    speed = min(speed / 2, 1.5)  # Speed limit (adjust as needed)
+
+                    drive_msg = self._convert_action(steering, speed)
+                    self.pub_drive.publish(drive_msg)
+
+                except Exception as e:
+                    print(f"Error getting action: {e}")
+                    steering = 0.0
+                    speed = 0.0
         else:
             self.get_logger().warn("Skipping scan: No valid LiDAR data received.")
 
@@ -156,10 +221,17 @@ class Dreamer(Node):
         print('dreamer published action: steering_angle = ', steering_angle, "; speed = ", speed)
         return drive_msg
 
+    def recursive_update(self, base, update): 
+        for key, value in update.items():
+            if isinstance(value, dict) and key in base:
+                self.recursive_update(base[key], value)
+            else:
+                base[key] = value
+
 def main(args=None):
     rclpy.init(args=args)
     print("Dreamer Initialized")
-    dreamer_node = Dreamer()
+    dreamer_node = DreamerRacer()
     rclpy.spin(dreamer_node)
 
     # Destroy the node explicitly

@@ -203,6 +203,7 @@ def make_env(config, mode, id):
 
 
 def main(config):
+    # Initialization (unchanged core)
     tools.set_seed_everywhere(config.seed)
     if config.deterministic_run:
         tools.enable_deterministic_run()
@@ -214,73 +215,63 @@ def main(config):
     config.log_every //= config.action_repeat
     config.time_limit //= config.action_repeat
 
-    print("Logdir", logdir)
+    # Directory setup
     logdir.mkdir(parents=True, exist_ok=True)
     config.traindir.mkdir(parents=True, exist_ok=True)
     config.evaldir.mkdir(parents=True, exist_ok=True)
     step = count_steps(config.traindir)
-    # step in logger is environmental step
     logger = tools.Logger(logdir, config.action_repeat * step)
 
-    print("Create envs.")
-    if config.offline_traindir:
-        directory = config.offline_traindir.format(**vars(config))
-    else:
-        directory = config.traindir
-    train_eps = tools.load_episodes(directory, limit=config.dataset_size)
-    if config.offline_evaldir:
-        directory = config.offline_evaldir.format(**vars(config))
-    else:
-        directory = config.evaldir
-    eval_eps = tools.load_episodes(directory, limit=1)
-    make = lambda mode, id: make_env(config, mode, id)
-    train_envs = [make("train", i) for i in range(config.envs)]
-    eval_envs = [make("eval", i) for i in range(config.envs)]
+    # Environment creation (F1Tenth placeholder)
+    def make_env(mode, id):
+        '''F1Tenth environment placeholder'''
+        #! IMPLEMENT THIS WITH YOUR ENVIRONMENT
+        return wrappers.TimeLimit(
+            F1TenthEnv(sensors=['lidar']),  # Your class
+            config.time_limit
+        )
+    
+    # Environment initialization
+    print("Creating F1Tenth environments")
+    train_envs = [make_env("train", i) for i in range(config.envs)]
+    eval_envs = [make_env("eval", i) for i in range(config.envs)]
+    
+    # Parallel processing setup (unchanged)
     if config.parallel:
         train_envs = [Parallel(env, "process") for env in train_envs]
         eval_envs = [Parallel(env, "process") for env in eval_envs]
     else:
         train_envs = [Damy(env) for env in train_envs]
         eval_envs = [Damy(env) for env in eval_envs]
-    acts = train_envs[0].action_space
-    print("Action Space", acts)
-    config.num_actions = acts.n if hasattr(acts, "n") else acts.shape[0]
 
+    # Action space setup (continuous specific)
+    acts = train_envs[0].action_space
+    print(f"Action space: {acts}")
+    config.num_actions = acts.shape[0]  # Continuous action dim
+
+    # Dataset initialization (unchanged core)
+    train_eps = tools.load_episodes(config.traindir, limit=config.dataset_size)
+    eval_eps = tools.load_episodes(config.evaldir, limit=1)
+    
+    # Prefill with random actions (continuous specific)
     state = None
     if not config.offline_traindir:
         prefill = max(0, config.prefill - count_steps(config.traindir))
-        print(f"Prefill dataset ({prefill} steps).")
-        if hasattr(acts, "discrete"):
-            random_actor = tools.OneHotDist(
-                torch.zeros(config.num_actions).repeat(config.envs, 1)
-            )
-        else:
-            random_actor = torchd.independent.Independent(
-                torchd.uniform.Uniform(
-                    torch.tensor(acts.low).repeat(config.envs, 1),
-                    torch.tensor(acts.high).repeat(config.envs, 1),
-                ),
-                1,
-            )
-
-        def random_agent(o, d, s):
-            action = random_actor.sample()
-            logprob = random_actor.log_prob(action)
-            return {"action": action, "logprob": logprob}, None
-
-        state = tools.simulate(
-            random_agent,
-            train_envs,
-            train_eps,
-            config.traindir,
-            logger,
-            limit=config.dataset_size,
-            steps=prefill,
+        print(f"Prefill dataset ({prefill} steps)")
+        random_actor = torchd.independent.Independent(
+            torchd.uniform.Uniform(
+                torch.tensor(acts.low).repeat(config.envs, 1),
+                torch.tensor(acts.high).repeat(config.envs, 1),
+            ), 1
         )
-        logger.step += prefill * config.action_repeat
-        print(f"Logger: ({logger.step} steps).")
+        state = tools.simulate(
+            lambda o, d, s: ({"action": random_actor.sample()}, None),
+            train_envs, train_eps, config.traindir, logger,
+            limit=config.dataset_size, steps=prefill
+        )
 
-    print("Simulate agent.")
+    # Agent setup (unchanged core)
+    print("Initializing Dreamer agent")
     train_dataset = make_dataset(train_eps, config)
     eval_dataset = make_dataset(eval_eps, config)
     agent = Dreamer(
@@ -290,18 +281,19 @@ def main(config):
         logger,
         train_dataset,
     ).to(config.device)
-    agent.requires_grad_(requires_grad=False)
+    
+    # Checkpoint loading (unchanged)
     if (logdir / "latest.pt").exists():
         checkpoint = torch.load(logdir / "latest.pt")
         agent.load_state_dict(checkpoint["agent_state_dict"])
         tools.recursively_load_optim_state_dict(agent, checkpoint["optims_state_dict"])
         agent._should_pretrain._once = False
 
-    # make sure eval will be executed once after config.steps
+    # Training loop (modified for vector obs)
     while agent._step < config.steps + config.eval_every:
-        logger.write()
+        # Evaluation phase
         if config.eval_episode_num > 0:
-            print("Start evaluation.")
+            print("Evaluating policy")
             eval_policy = functools.partial(agent, training=False)
             tools.simulate(
                 eval_policy,
@@ -312,10 +304,9 @@ def main(config):
                 is_eval=True,
                 episodes=config.eval_episode_num,
             )
-            if config.video_pred_log:
-                video_pred = agent._wm.video_pred(next(eval_dataset))
-                logger.video("eval_openl", to_np(video_pred))
-        print("Start training.")
+            
+        # Training phase
+        print("Training step")
         state = tools.simulate(
             agent,
             train_envs,
@@ -326,17 +317,34 @@ def main(config):
             steps=config.eval_every,
             state=state,
         )
-        items_to_save = {
+        
+        # Checkpoint saving
+        torch.save({
             "agent_state_dict": agent.state_dict(),
             "optims_state_dict": tools.recursively_collect_optim_state_dict(agent),
-        }
-        torch.save(items_to_save, logdir / "latest.pt")
-    for env in train_envs + eval_envs:
-        try:
-            env.close()
-        except Exception:
-            pass
+        }, logdir / "latest.pt")
 
+    # Cleanup
+    for env in train_envs + eval_envs:
+        try: env.close()
+        except: pass
+    return logdir
+
+class F1TenthEnv: #! PLACEHOLDER CLASS FOR MAKING TRAINING ENV
+    """IMPLEMENT THIS CLASS"""
+    def __init__(self, sensors):
+        self.observation_space = gym.spaces.Box(-np.inf, np.inf, (1080,))
+        self.action_space = gym.spaces.Box(-1.0, 1.0, (2,))
+        
+    def reset(self):
+        return {'lidar': np.random.randn(1080), 'is_first': True}
+    
+    def step(self, action):
+        obs = {'lidar': np.random.randn(1080), 'is_first': False}
+        return obs, 0.0, False, {}
+    
+    def close(self):
+        pass
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

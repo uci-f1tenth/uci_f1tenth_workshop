@@ -14,7 +14,6 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from torch import distributions as torchd
-from torch.utils.tensorboard import SummaryWriter
 
 
 to_np = lambda x: x.detach().cpu().numpy()
@@ -57,7 +56,6 @@ class TimeRecording:
 class Logger:
     def __init__(self, logdir, step):
         self._logdir = logdir
-        self._writer = SummaryWriter(log_dir=str(logdir), max_queue=1000)
         self._last_step = None
         self._last_time = None
         self._scalars = {}

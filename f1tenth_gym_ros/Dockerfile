@@ -35,6 +35,14 @@ RUN apt-get update --fix-missing && \
                        ros-foxy-rviz2
 RUN apt-get -y dist-upgrade
 RUN pip3 install transforms3d
+RUN pip3 intsall torch
+RUN pip3 intsall matplotlib
+RUN pip3 intsall ruamel.yaml
+RUN pip3 intsall einops
+RUN pip3 install protobuf
+RUN pip3 install gym
+RUN pip3 install numpy
+
 
 # f1tenth gym
 RUN git clone https://github.com/f1tenth/f1tenth_gym
@@ -49,7 +57,7 @@ RUN source /opt/ros/foxy/setup.bash && \
     apt-get update --fix-missing && \
     rosdep install -i --from-path src --rosdistro foxy -y && \
     colcon build
-
+    
 RUN echo "source /opt/ros/foxy/setup.bash" >> ~/.bashrc
 RUN echo "source install/local_setup.bash" >> ~/.bashrc
 

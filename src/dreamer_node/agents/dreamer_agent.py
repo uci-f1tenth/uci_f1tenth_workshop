@@ -91,19 +91,6 @@ class Dreamer(Node):
         drive_msg = self._convert_action(steering, speed)
         self.pub_drive.publish(drive_msg)
 
-        # TODO: Port dreamer here:
-        # agent_action = self.agent.get_action(scan)
-        # steering = float(agent_action[0])
-        # speed = float(agent_action[1])
-        # speed = min(float(agent_action[1]) / 2, 1.5)
-
-        steering = 0.0
-        speed = 1.0
-
-        # TODO: Set steering and speed variables
-        drive_msg = self._convert_action(steering, speed)
-        self.pub_drive.publish(drive_msg)
-
     def lidar_postproccess(self, lidar_data: LaserScan):
         """
         Processes raw LaserScan data to extract usable information for navigation.

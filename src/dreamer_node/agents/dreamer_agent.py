@@ -27,6 +27,7 @@ class Dreamer(Node):
 
         # variables
         self.time = self.get_clock().now()
+        self.scan_num = 0
 
         # subscribers/publishers
         self.sub_scan = self.create_subscription(
@@ -35,11 +36,13 @@ class Dreamer(Node):
             self.scan_callback, 
             10
         )
+        
         self.pub_drive = self.create_publisher(
             AckermannDriveStamped, 
             self.const.DRIVE_TOPIC, 
             10
         )
+        
         self.pub_scan = self.create_publisher(
             LaserScan,
             self.const.LIDAR_TOPIC,
@@ -106,17 +109,29 @@ class Dreamer(Node):
         current_stamp = Time.from_msg(lidar_data.header.stamp)
         last_scan_time = current_stamp.nanoseconds - self.time.nanoseconds
         duration = Duration(nanoseconds=last_scan_time)
+        
         if duration.nanoseconds / 1e9 < (0.08 - 0.001): # limit to approx. 10Hz
             assert f'Error: last laser scan time is {last_scan_time}. Limit = 10Hz'
             return
-        # receive LiDAR scan rate
+        
+        # receive LiDAR scan rte
         self.time = current_stamp
-        print('dreamer received LIDAR scan @ rate:', last_scan_time / 1e9) # TODO: debug for scan rate
 
         raw_data = list(np.array(lidar_data.ranges, dtype=float))
-        print("observation = ", raw_data); # TODO: debug range
+        raw_data = raw_data[0:1080]
+        raw_data = np.round(raw_data, 4).tolist()
 
-        obs_lidar = raw_data[0:1080]
+        if not hasattr(self, "last_log_time"):
+            self.last_log_time = self.get_clock().now()
+        
+        elapsed_time = (self.get_clock().now() - self.last_log_time).nanoseconds / 1e9
+        
+        if elapsed_time >= 3:
+            self.last_log_time = self.get_clock().now()
+            print('dreamer received LIDAR scan @ rate:', last_scan_time / 1e9) # TODO: debug for scan rate
+            print("observation = ", raw_data); # TODO: debug range
+        
+        obs_lidar = raw_data
         extra_noise_stddev = 0.3 # 0.3m
         extra_noise = np.random.normal(0, extra_noise_stddev, 1080)
         return obs_lidar + extra_noise # adding noise (remove extra_noise to get rid of noise)

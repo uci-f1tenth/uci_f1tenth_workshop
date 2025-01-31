@@ -35,10 +35,10 @@ RUN apt-get update --fix-missing && \
                        ros-foxy-rviz2
 RUN apt-get -y dist-upgrade
 RUN pip3 install transforms3d
-RUN pip3 intsall torch
-RUN pip3 intsall matplotlib
-RUN pip3 intsall ruamel.yaml
-RUN pip3 intsall einops
+RUN pip3 install torch
+RUN pip3 install matplotlib
+RUN pip3 install ruamel.yaml
+RUN pip3 install einops
 RUN pip3 install protobuf
 RUN pip3 install gym
 RUN pip3 install numpy

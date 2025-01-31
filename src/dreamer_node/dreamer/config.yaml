@@ -93,35 +93,53 @@ defaults:
   disag_units: 400
   disag_action_cond: False
 
-f1tenth:  # <--- Add this section
-  task: f1tenth_track1  # Replace with your actual F1Tenth task name
-  action_repeat: 1  # Adjust as needed
-  time_limit: 200   # Adjust as needed
-  # ... (any other F1Tenth-specific settings)
+f1tenth:  # F1Tenth-specific overrides
+  # Environment
+  task: 'f1tenth_race'
+  size: [1]  # Placeholder since we're using vector obs
+  envs: 4
+  action_repeat: 2  # Match control frequency (e.g., 20Hz = 2 repeats @ 40Hz base)
+  time_limit: 500  # Shorter episodes for racing
+  grayscale: False  # Irrelevant for vector obs
+  prefill: 5000  # More initial exploration
 
-  # Dreamer agent settings:
-  wm:
-    encoder:
-      cnn:
-        depth: 32
-        layers: 4
-    dynamics:
-      deter: 200
-      hidden: 200
-      stoch: 30
-    # ... other Dreamer config parameters...
+  # Model Architecture
+  dyn_hidden: 1024
+  dyn_deter: 1024
+  units: 1024
+  encoder:
+    mlp_keys: 'lidar'  # Match your observation key
+    cnn_keys: ''       # Disable image processing
+    mlp_layers: 5
+    mlp_units: 2048    # For 1080D lidar input
+  decoder:
+    mlp_keys: 'lidar'
+    cnn_keys: ''
   actor:
-    layers: 3
-    units: 100
-    dist: normal  # or 'onehot'
-    init_std: 1.0
-  value:
-    layers: 3
-    units: 100 
+    dist: 'normal'     # Continuous control
+    min_std: 0.05      # Tighter action noise
+    max_std: 0.5
+    entropy: 1e-4      # Lower entropy regularization
+  critic:
+    layers: 3          # Deeper value estimation
 
-debug:
-  debug: True
-  pretrain: 1
-  prefill: 1
-  batch_size: 10
-  batch_length: 20
+  # Training
+  batch_size: 32       # Larger batches for stability
+  batch_length: 48     # Shorter sequences
+  imag_horizon: 25     # Longer planning horizon
+  discount: 0.99       # Slightly lower discount
+  model_lr: 3e-4       # Faster model learning
+
+  # Exploration
+  expl_behavior: 'plan2explore'
+  expl_until: 5000     # Explore for first 5k steps
+  expl_intr_scale: 0.5 # Balance intrinsic/extrinsic
+  disag_units: 512     # Larger disagreement network
+
+  # Optimization
+  grad_clip: 100.0     # Tighter gradient clipping
+  video_pred_log: False # No video for vector obs
+
+  # Network Architecture
+  dyn_scale: 1.0       # Stronger dynamics loss
+  rep_scale: 0.5       # Increased representation loss

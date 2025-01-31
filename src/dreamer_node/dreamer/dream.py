@@ -35,63 +35,69 @@ class Dreamer(nn.Module):
         self._should_reset = tools.Every(config.reset_every)
         self._should_expl = tools.Until(int(config.expl_until / config.action_repeat))
         self._metrics = {}
-        # this is update step
         self._step = logger.step // config.action_repeat
         self._update_count = 0
         self._dataset = dataset
+        
+        # World Model (modified for vector observations)
         self._wm = models.WorldModel(obs_space, act_space, self._step, config)
+        
+        # Task Behavior (continuous control focus)
         self._task_behavior = models.ImagBehavior(config, self._wm)
-        if (
-            config.compile and os.name != "nt"
-        ):  # compilation is not supported on windows
+        
+        # Compilation (kept but not F1Tenth-specific)
+        if config.compile and os.name != "nt":
             self._wm = torch.compile(self._wm)
             self._task_behavior = torch.compile(self._task_behavior)
+            
+        # Exploration (plan2explore recommended)
         reward = lambda f, s, a: self._wm.heads["reward"](f).mean()
-        self._expl_behavior = dict(
-            greedy=lambda: self._task_behavior,
-            random=lambda: expl.Random(config, act_space),
-            plan2explore=lambda: expl.Plan2Explore(config, self._wm, reward),
-        )[config.expl_behavior]().to(self._config.device)
+        self._expl_behavior = {
+            'greedy': lambda: self._task_behavior,
+            'random': lambda: expl.Random(config, act_space),
+            'plan2explore': lambda: expl.Plan2Explore(config, self._wm, reward)
+        }[config.expl_behavior]().to(config.device)
 
     def __call__(self, obs, reset, state=None, training=True):
         step = self._step
         if training:
-            steps = (
-                self._config.pretrain
-                if self._should_pretrain()
-                else self._should_train(step)
-            )
+            # Training logic (unchanged core)
+            steps = self._config.pretrain if self._should_pretrain() else self._should_train(step)
             for _ in range(steps):
                 self._train(next(self._dataset))
                 self._update_count += 1
                 self._metrics["update_count"] = self._update_count
             if self._should_log(step):
+                # Removed video logging
                 for name, values in self._metrics.items():
                     self._logger.scalar(name, float(np.mean(values)))
                     self._metrics[name] = []
-                if self._config.video_pred_log:
-                    openl = self._wm.video_pred(next(self._dataset))
-                    self._logger.video("train_openl", to_np(openl))
                 self._logger.write(fps=True)
 
+        # Policy execution (continuous actions only)
         policy_output, state = self._policy(obs, state, training)
-
         if training:
             self._step += len(reset)
             self._logger.step = self._config.action_repeat * self._step
         return policy_output, state
 
     def _policy(self, obs, state, training):
+        # Simplified for continuous control
         if state is None:
             latent = action = None
         else:
             latent, action = state
+            
         obs = self._wm.preprocess(obs)
-        embed = self._wm.encoder(obs)
+        embed = self._wm.encoder(obs)  # MLP encoder only
         latent, _ = self._wm.dynamics.obs_step(latent, action, embed, obs["is_first"])
+        
         if self._config.eval_state_mean:
             latent["stoch"] = latent["mean"]
+            
         feat = self._wm.dynamics.get_feat(latent)
+        
+        # Continuous action selection
         if not training:
             actor = self._task_behavior.actor(feat)
             action = actor.mode()
@@ -101,34 +107,30 @@ class Dreamer(nn.Module):
         else:
             actor = self._task_behavior.actor(feat)
             action = actor.sample()
+            
         logprob = actor.log_prob(action)
         latent = {k: v.detach() for k, v in latent.items()}
         action = action.detach()
-        if self._config.actor["dist"] == "onehot_gumble":
-            action = torch.one_hot(
-                torch.argmax(action, dim=-1), self._config.num_actions
-            )
+        
+        # Removed discrete action conversion
         policy_output = {"action": action, "logprob": logprob}
         state = (latent, action)
         return policy_output, state
 
     def _train(self, data):
+        # Core training remains unchanged
         metrics = {}
         post, context, mets = self._wm._train(data)
         metrics.update(mets)
         start = post
         reward = lambda f, s, a: self._wm.heads["reward"](
-            self._wm.dynamics.get_feat(s)
-        ).mode()
+            self._wm.dynamics.get_feat(s)).mode()
         metrics.update(self._task_behavior._train(start, reward)[-1])
         if self._config.expl_behavior != "greedy":
             mets = self._expl_behavior.train(start, context, data)[-1]
             metrics.update({"expl_" + key: value for key, value in mets.items()})
         for name, value in metrics.items():
-            if not name in self._metrics.keys():
-                self._metrics[name] = [value]
-            else:
-                self._metrics[name].append(value)
+            self._metrics.setdefault(name, []).append(value)
 
 
 def count_steps(folder):

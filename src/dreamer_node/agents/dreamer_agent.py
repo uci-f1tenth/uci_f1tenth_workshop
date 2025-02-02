@@ -6,15 +6,14 @@ from rclpy.duration import Duration
 import numpy as np
 from sensor_msgs.msg import LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped
-
+from typing import Tuple, List
+import math
 import os
 import argparse
 import ruamel.yaml as yaml
 from ruamel.yaml import YAML
 import pathlib
-
 import gym
-
 import torch
 from util.constants import Constants
 from dreamer.dream import Dreamer
@@ -182,9 +181,8 @@ class DreamerRacer(Node):
         # receive LiDAR scan rte
         self.time = current_stamp
 
-        raw_data = list(np.array(lidar_data.ranges, dtype=float))
-        raw_data = raw_data[0:1080]
-        raw_data = np.round(raw_data, 4).tolist()
+        filtered_data = self._filter_range(lidar_data, self.const.FORWARD_SCAN_ARC)
+        filtered_data = [round(point_range, 4) for point_range in filtered_data]
 
         if not hasattr(self, "last_log_time"):
             self.last_log_time = self.get_clock().now()
@@ -194,9 +192,9 @@ class DreamerRacer(Node):
         if elapsed_time >= 3:
             self.last_log_time = self.get_clock().now()
             print('dreamer received LIDAR scan @ rate:', last_scan_time / 1e9) # TODO: debug for scan rate
-            print("observation = ", raw_data); # TODO: debug range
+            print("observation = ", filtered_data); # TODO: debug range
         
-        obs_lidar = raw_data
+        obs_lidar = filtered_data
         extra_noise_stddev = 0.3 # 0.3m
         extra_noise = np.random.normal(0, extra_noise_stddev, 1080)
         return obs_lidar + extra_noise # adding noise (remove extra_noise to get rid of noise)
@@ -227,6 +225,35 @@ class DreamerRacer(Node):
                 self.recursive_update(base[key], value)
             else:
                 base[key] = value
+
+    def _filter_range(self, lidar_data: LaserScan, range: Tuple[float]) -> List[float]:
+        """
+        Filters raw scan for only the desired arc.
+
+        Args:
+            lidar_data: original scan message
+            range: the arc to filter for (e.g. (-pi/2, +pi/2))
+        
+        Returns:
+            List of filtered ranges
+        """
+        raw_scan = list(np.flip(np.array(lidar_data.ranges, dtype=float))) # include liDAR observations
+
+        raw_min_angle = lidar_data.angle_min
+        raw_max_angle = lidar_data.angle_max
+        target_min_angle, target_max_angle = range
+        
+        raw_arc_length = raw_max_angle - raw_min_angle
+        number_of_ranges = len(raw_scan)
+        number_of_ranges_per_radian = number_of_ranges / raw_arc_length
+
+        skipped_min_angle = target_min_angle - raw_min_angle
+        skipped_max_angle = raw_max_angle - target_max_angle
+
+        min_index = math.ceil(skipped_min_angle * number_of_ranges_per_radian)
+        max_index = math.floor(number_of_ranges - skipped_max_angle * number_of_ranges_per_radian)
+
+        return raw_scan[min_index : max_index]
 
 def main(args=None):
     rclpy.init(args=args)

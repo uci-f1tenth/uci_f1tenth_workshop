@@ -1,4 +1,5 @@
 # constants.py
+from pathlib import Path
 import numpy as np
 class Constants:
     """
@@ -17,11 +18,11 @@ class Constants:
 
 class Config:
     def __init__(self):
-        self.logdir = "/dreamer/resource/log"
-        self.traindir = "/dreamer/resource/train"
-        self.evaldir = "/dreamer/resource/eval"
-        self.offline_traindir = "/dreamer/resource/train"
-        self.offline_evaldir = "/dreamer/resource/eval"
+        self.logdir = Path("/dreamer/resource/log")
+        self.traindir = Path("/dreamer/resource/train")
+        self.evaldir = Path("/dreamer/resource/eval")
+        self.offline_traindir = Path("/dreamer/resource/train")
+        self.offline_evaldir = Path("/dreamer/resource/eval")
         self.seed = 0
         self.deterministic_run = False
         self.steps = 1e6

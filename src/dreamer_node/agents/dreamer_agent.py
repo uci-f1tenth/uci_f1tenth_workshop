@@ -15,10 +15,15 @@ from ruamel.yaml import YAML
 import pathlib
 import gym
 import torch
+from torch import distributions as torchd
+
 from util.constants import Constants
 from util.constants import Config 
+
 from dreamer.dream import Dreamer
+from dreamer.dream import Parallel, Damy
 import dreamer.tools as tools
+
 
 class DreamerRacer(Node):
     """ 
@@ -75,6 +80,100 @@ class DreamerRacer(Node):
         config.eval_every //= config.action_repeat
         config.log_every //= config.action_repeat
         config.time_limit //= config.action_repeat
+
+        print("Logdir", logdir)
+        logdir.mkdir(parents=True, exist_ok=True)
+        config.traindir.mkdir(parents=True, exist_ok=True)
+        config.evaldir.mkdir(parents=True, exist_ok=True)
+        step = sum(int(str(n).split("-")[-1][:-4]) - 1 for n in config.traindir.glob("*.npz"))
+        # step in logger is environmental step
+        logger = tools.Logger(logdir, config.action_repeat * step)
+
+        print("Create envs.")
+        if config.offline_traindir:
+            directory = config.offline_traindir.format(**vars(config))
+        else:
+            directory = config.traindir
+        train_eps = tools.load_episodes(directory, limit=config.dataset_size)
+        if config.offline_evaldir:
+            directory = config.offline_evaldir.format(**vars(config))
+        else:
+            directory = config.evaldir
+        eval_eps = tools.load_episodes(directory, limit=1)
+        make = lambda mode, id: self.make_env(config, mode, id)
+        train_envs = [make("train", i) for i in range(config.envs)]
+        eval_envs = [make("eval", i) for i in range(config.envs)]
+        if config.parallel:
+            train_envs = [Parallel(env, "process") for env in train_envs]
+            eval_envs = [Parallel(env, "process") for env in eval_envs]
+        else:
+            train_envs = [Damy(env) for env in train_envs]
+            eval_envs = [Damy(env) for env in eval_envs]
+        acts = train_envs[0].action_space
+        print("Action Space", acts)
+        config.num_actions = acts.n if hasattr(acts, "n") else acts.shape[0]
+
+        state = None
+        state = None
+        if not config.offline_traindir:
+            prefill = max(0, config.prefill - sum(int(str(n).split("-")[-1][:-4]) - 1 for n in config.traindir.glob("*.npz")))
+            print(f"Prefill dataset ({prefill} steps).")
+            if hasattr(acts, "discrete"):
+                random_actor = tools.OneHotDist(
+                    torch.zeros(config.num_actions).repeat(config.envs, 1)
+                )
+            else:
+                random_actor = torchd.independent.Independent(
+                    torchd.uniform.Uniform(
+                        torch.tensor(acts.low).repeat(config.envs, 1),
+                        torch.tensor(acts.high).repeat(config.envs, 1),
+                    ),
+                    1,
+                )
+
+            def random_agent(o, d, s):
+                action = random_actor.sample()
+                logprob = random_actor.log_prob(action)
+                return {"action": action, "logprob": logprob}, None
+
+            state = tools.simulate(
+                random_agent,
+                train_envs,
+                train_eps,
+                config.traindir,
+                logger,
+                limit=config.dataset_size,
+                steps=prefill,
+            )
+            logger.step += prefill * config.action_repeat
+            print(f"Logger: ({logger.step} steps).")
+
+        print("Simulate agent.")
+        train_dataset = self.make_dataset(train_eps, config)
+        eval_dataset = self.make_dataset(eval_eps, config)
+        agent = Dreamer(
+            train_envs[0].observation_space,
+            train_envs[0].action_space,
+            config,
+            logger,
+            train_dataset,
+        ).to(config.device)
+        agent.requires_grad_(requires_grad=False)
+        if (logdir / "latest.pt").exists():
+            checkpoint = torch.load(logdir / "latest.pt")
+            agent.load_state_dict(checkpoint["agent_state_dict"])
+            tools.recursively_load_optim_state_dict(agent, checkpoint["optims_state_dict"])
+            agent._should_pretrain._once = False
+
+    def make_env(self, config, mode, id):
+        # port the dreamer environment
+        env = None
+
+    def make_dataset(self, episodes, config):
+        generator = tools.sample_episodes(episodes, config.batch_length)
+        dataset = tools.from_generator(generator, config.batch_size)
+        return dataset
+
     
     def scan_callback(self, scan_msg: LaserScan):
         """

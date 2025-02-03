@@ -21,8 +21,8 @@ class Config:
         self.logdir = Path("/dreamer/resource/log")
         self.traindir = Path("/dreamer/resource/train")
         self.evaldir = Path("/dreamer/resource/eval")
-        self.offline_traindir = Path("/dreamer/resource/train")
-        self.offline_evaldir = Path("/dreamer/resource/eval")
+        self.offline_traindir = "/dreamer/resource/train"
+        self.offline_evaldir = "/dreamer/resource/eval"
         self.seed = 0
         self.deterministic_run = False
         self.steps = 1e6

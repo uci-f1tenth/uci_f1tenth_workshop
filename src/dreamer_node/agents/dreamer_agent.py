@@ -103,18 +103,18 @@ class DreamerRacer(Node):
         make = lambda mode, id: self.make_env(config, mode, id)
         train_envs = [make("train", i) for i in range(config.envs)]
         eval_envs = [make("eval", i) for i in range(config.envs)]
+
         if config.parallel:
             train_envs = [Parallel(env, "process") for env in train_envs]
             eval_envs = [Parallel(env, "process") for env in eval_envs]
         else:
             train_envs = [Damy(env) for env in train_envs]
             eval_envs = [Damy(env) for env in eval_envs]
+
         acts = train_envs[0].action_space
         print("Action Space", acts)
         config.num_actions = acts.n if hasattr(acts, "n") else acts.shape[0]
 
-        state = None
-        state = None
         if not config.offline_traindir:
             prefill = max(0, config.prefill - sum(int(str(n).split("-")[-1][:-4]) - 1 for n in config.traindir.glob("*.npz")))
             print(f"Prefill dataset ({prefill} steps).")

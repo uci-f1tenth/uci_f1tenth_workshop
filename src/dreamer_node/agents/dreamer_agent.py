@@ -8,12 +8,17 @@ from sensor_msgs.msg import LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped
 from typing import Tuple, List
 import math
+import os
+import argparse
 import ruamel.yaml as yaml
 from ruamel.yaml import YAML
+import pathlib
 import gym
 import torch
 from util.constants import Constants
+from util.constants import Config 
 from dreamer.dream import Dreamer
+import dreamer.tools as tools
 
 class DreamerRacer(Node):
     """ 
@@ -23,6 +28,7 @@ class DreamerRacer(Node):
         super().__init__('dreamer_node')
         # constants
         self.const = Constants()
+        self.config = Config() 
 
         # observations
         self.observations = dict()
@@ -54,8 +60,21 @@ class DreamerRacer(Node):
             self.const.LIDAR_TOPIC,
             10
         )
-        # dreamer
-        
+
+        self.dreamer_init(self.config)
+
+
+    def dreamer_init(self, config):
+        tools.set_seed_everywhere(config.seed)
+        if config.deterministic_run:
+            tools.enable_deterministic_run()
+        logdir = pathlib.Path(config.logdir).expanduser()
+        config.traindir = config.traindir or logdir / "train_eps"
+        config.evaldir = config.evaldir or logdir / "eval_eps"
+        config.steps //= config.action_repeat
+        config.eval_every //= config.action_repeat
+        config.log_every //= config.action_repeat
+        config.time_limit //= config.action_repeat
     
     def scan_callback(self, scan_msg: LaserScan):
         """
@@ -78,44 +97,6 @@ class DreamerRacer(Node):
         """
 
         self.observations["lidar"] = self.lidar_postproccess(scan_msg)
-
-        if self.observations["lidar"] is not None and len(self.observations["lidar"]) > 0:  #Check for None and empty array
-            scan_noised = scan_msg
-            scan_noised.ranges = list(np.flip(self.observations["lidar"]).astype(float))
-            self.pub_scan.publish(scan_noised)
-
-            # Dreamer Integration
-            observation = np.array(self.observations["lidar"])
-            self.scan_buffer.append(observation)
-
-            if len(self.scan_buffer) >= self.sequence_length:
-                observation = np.array(self.scan_buffer[-self.sequence_length:])
-                self.scan_buffer = self.scan_buffer[-self.sequence_length:]
-                observation_tensor = torch.as_tensor(observation, dtype=torch.float32, device=self.agent._config.device).unsqueeze(0)
-
-                try:
-                    policy_output, _ = self.agent(observation_tensor, None, None, training=False)  # No reset or state needed
-                    action = policy_output["action"].cpu().numpy()[0] # Get the action and convert it to numpy array
-
-                    steering = float(action[0])  # Extract steering (float)
-                    speed = float(action[1])     # Extract speed (float)
-                    speed = min(speed / 2, 1.5)  # Speed limit (adjust as needed)
-
-                    drive_msg = self._convert_action(steering, speed)
-                    self.pub_drive.publish(drive_msg)
-
-                except Exception as e:
-                    print(f"Error getting action: {e}")
-                    steering = 0.0
-                    speed = 0.0
-        else:
-            self.get_logger().warn("Skipping scan: No valid LiDAR data received.")
-
-        # TODO: Port dreamer here:
-        # agent_action = self.agent.get_action(scan)
-        # steering = float(agent_action[0])
-        # speed = float(agent_action[1])
-        # speed = min(float(agent_action[1]) / 2, 1.5)
 
         steering = 0.0
         speed = 1.0
@@ -164,9 +145,7 @@ class DreamerRacer(Node):
             print("observation = ", filtered_data); # TODO: debug range
         
         obs_lidar = filtered_data
-        extra_noise_stddev = 0.3 # 0.3m
-        extra_noise = np.random.normal(0, extra_noise_stddev, 1080)
-        return obs_lidar + extra_noise # adding noise (remove extra_noise to get rid of noise)
+        return obs_lidar 
 
     def _convert_action(self, steering_angle, speed) -> AckermannDriveStamped:
         """
@@ -187,6 +166,13 @@ class DreamerRacer(Node):
         drive_msg.drive.speed = speed
         print('dreamer published action: steering_angle = ', steering_angle, "; speed = ", speed)
         return drive_msg
+
+    def recursive_update(self, base, update): 
+        for key, value in update.items():
+            if isinstance(value, dict) and key in base:
+                self.recursive_update(base[key], value)
+            else:
+                base[key] = value
 
     def _filter_range(self, lidar_data: LaserScan, range: Tuple[float]) -> List[float]:
         """

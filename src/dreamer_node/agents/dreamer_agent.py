@@ -8,11 +8,8 @@ from sensor_msgs.msg import LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped
 from typing import Tuple, List
 import math
-import os
-import argparse
 import ruamel.yaml as yaml
 from ruamel.yaml import YAML
-import pathlib
 import gym
 import torch
 from util.constants import Constants
@@ -57,36 +54,8 @@ class DreamerRacer(Node):
             self.const.LIDAR_TOPIC,
             10
         )
- 
-        # load configuration file
-        config_path = os.path.join(pathlib.Path(__file__).parent.parent, "dreamer", "config.yaml") # Relative path
-
-        try:
-            # Use the YAML class to load the config
-            yaml_loader = YAML(typ='safe', pure=True) # Create a yaml object
-            self.config = yaml_loader.load(open(config_path).read()) # Load using the object
-            chosen_config = "f1tenth"
-            self.recursive_update(self.config["defaults"], self.config[chosen_config])
-            self.config = argparse.Namespace(**self.config[chosen_config])
-        except FileNotFoundError as e:
-            print(f"Error loading config: {e}. Make sure the path is correct.")
-            exit()
-        except Exception as e:
-            print(f"Error loading config: {e}")
-            exit()
-
         # dreamer
-        device = torch.device(self.const.DEVICE) # make this CPU in constants.py if you do not have NVIDIA GPU
-        observation_space = gym.spaces.Box(-np.inf, np.inf, shape=(1080,), dtype=np.float32)
-        action_space = gym.spaces.Box(-1.0, 1.0, shape=(2,), dtype=np.float32)  # Assuming steering and speed are between -1 and 1
-
-        self.agent = Dreamer(
-            observation_space,
-            action_space,
-            self.config,
-            None,
-            None
-        ).to(device)
+        
     
     def scan_callback(self, scan_msg: LaserScan):
         """
@@ -218,13 +187,6 @@ class DreamerRacer(Node):
         drive_msg.drive.speed = speed
         print('dreamer published action: steering_angle = ', steering_angle, "; speed = ", speed)
         return drive_msg
-
-    def recursive_update(self, base, update): 
-        for key, value in update.items():
-            if isinstance(value, dict) and key in base:
-                self.recursive_update(base[key], value)
-            else:
-                base[key] = value
 
     def _filter_range(self, lidar_data: LaserScan, range: Tuple[float]) -> List[float]:
         """

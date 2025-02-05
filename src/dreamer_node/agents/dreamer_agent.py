@@ -15,8 +15,15 @@ from ruamel.yaml import YAML
 import pathlib
 import gym
 import torch
+from torch import distributions as torchd
+
 from util.constants import Constants
+from util.constants import Config 
+
 from dreamer.dream import Dreamer
+from dreamer.dream import Parallel, Damy
+import dreamer.tools as tools
+
 
 class DreamerRacer(Node):
     """ 
@@ -26,6 +33,7 @@ class DreamerRacer(Node):
         super().__init__('dreamer_node')
         # constants
         self.const = Constants()
+        self.config = Config() 
 
         # observations
         self.observations = dict()
@@ -57,36 +65,115 @@ class DreamerRacer(Node):
             self.const.LIDAR_TOPIC,
             10
         )
- 
-        # load configuration file
-        config_path = os.path.join(pathlib.Path(__file__).parent.parent, "dreamer", "config.yaml") # Relative path
 
-        try:
-            # Use the YAML class to load the config
-            yaml_loader = YAML(typ='safe', pure=True) # Create a yaml object
-            self.config = yaml_loader.load(open(config_path).read()) # Load using the object
-            chosen_config = "f1tenth"
-            self.recursive_update(self.config["defaults"], self.config[chosen_config])
-            self.config = argparse.Namespace(**self.config[chosen_config])
-        except FileNotFoundError as e:
-            print(f"Error loading config: {e}. Make sure the path is correct.")
-            exit()
-        except Exception as e:
-            print(f"Error loading config: {e}")
-            exit()
+        self.dreamer_init(self.config)
 
-        # dreamer
-        device = torch.device(self.const.DEVICE) # make this CPU in constants.py if you do not have NVIDIA GPU
-        observation_space = gym.spaces.Box(-np.inf, np.inf, shape=(1080,), dtype=np.float32)
-        action_space = gym.spaces.Box(-1.0, 1.0, shape=(2,), dtype=np.float32)  # Assuming steering and speed are between -1 and 1
 
-        self.agent = Dreamer(
-            observation_space,
-            action_space,
-            self.config,
-            None,
-            None
-        ).to(device)
+    def dreamer_init(self, config):
+        tools.set_seed_everywhere(config.seed)
+        if config.deterministic_run:
+            tools.enable_deterministic_run()
+        logdir = pathlib.Path(config.logdir).expanduser()
+        config.traindir = config.traindir or logdir / "train_eps"
+        config.evaldir = config.evaldir or logdir / "eval_eps"
+        config.steps //= config.action_repeat
+        config.eval_every //= config.action_repeat
+        config.log_every //= config.action_repeat
+        config.time_limit //= config.action_repeat
+
+        print("Logdir", logdir)
+        logdir.mkdir(parents=True, exist_ok=True)
+        config.traindir.mkdir(parents=True, exist_ok=True)
+        config.evaldir.mkdir(parents=True, exist_ok=True)
+        step = sum(int(str(n).split("-")[-1][:-4]) - 1 for n in config.traindir.glob("*.npz"))
+        # step in logger is environmental step
+        logger = tools.Logger(logdir, config.action_repeat * step)
+
+        print("Create envs.")
+        if config.offline_traindir:
+            directory = config.offline_traindir.format(**vars(config))
+        else:
+            directory = config.traindir
+        train_eps = tools.load_episodes(directory, limit=config.dataset_size)
+        if config.offline_evaldir:
+            directory = config.offline_evaldir.format(**vars(config))
+        else:
+            directory = config.evaldir
+        eval_eps = tools.load_episodes(directory, limit=1)
+        make = lambda mode, id: self.make_env(config, mode, id)
+        train_envs = [make("train", i) for i in range(config.envs)]
+        eval_envs = [make("eval", i) for i in range(config.envs)]
+
+        if config.parallel:
+            train_envs = [Parallel(env, "process") for env in train_envs]
+            eval_envs = [Parallel(env, "process") for env in eval_envs]
+        else:
+            train_envs = [Damy(env) for env in train_envs]
+            eval_envs = [Damy(env) for env in eval_envs]
+
+        acts = train_envs[0].action_space
+        print("Action Space", acts)
+        config.num_actions = acts.n if hasattr(acts, "n") else acts.shape[0]
+
+        if not config.offline_traindir:
+            prefill = max(0, config.prefill - sum(int(str(n).split("-")[-1][:-4]) - 1 for n in config.traindir.glob("*.npz")))
+            print(f"Prefill dataset ({prefill} steps).")
+            if hasattr(acts, "discrete"):
+                random_actor = tools.OneHotDist(
+                    torch.zeros(config.num_actions).repeat(config.envs, 1)
+                )
+            else:
+                random_actor = torchd.independent.Independent(
+                    torchd.uniform.Uniform(
+                        torch.tensor(acts.low).repeat(config.envs, 1),
+                        torch.tensor(acts.high).repeat(config.envs, 1),
+                    ),
+                    1,
+                )
+
+            def random_agent(o, d, s):
+                action = random_actor.sample()
+                logprob = random_actor.log_prob(action)
+                return {"action": action, "logprob": logprob}, None
+
+            state = tools.simulate(
+                random_agent,
+                train_envs,
+                train_eps,
+                config.traindir,
+                logger,
+                limit=config.dataset_size,
+                steps=prefill,
+            )
+            logger.step += prefill * config.action_repeat
+            print(f"Logger: ({logger.step} steps).")
+
+        print("Simulate agent.")
+        train_dataset = self.make_dataset(train_eps, config)
+        eval_dataset = self.make_dataset(eval_eps, config)
+        agent = Dreamer(
+            train_envs[0].observation_space,
+            train_envs[0].action_space,
+            config,
+            logger,
+            train_dataset,
+        ).to(config.device)
+        agent.requires_grad_(requires_grad=False)
+        if (logdir / "latest.pt").exists():
+            checkpoint = torch.load(logdir / "latest.pt")
+            agent.load_state_dict(checkpoint["agent_state_dict"])
+            tools.recursively_load_optim_state_dict(agent, checkpoint["optims_state_dict"])
+            agent._should_pretrain._once = False
+
+    def make_env(self, config, mode, id):
+        # port the dreamer environment
+        env = None
+
+    def make_dataset(self, episodes, config):
+        generator = tools.sample_episodes(episodes, config.batch_length)
+        dataset = tools.from_generator(generator, config.batch_size)
+        return dataset
+
     
     def scan_callback(self, scan_msg: LaserScan):
         """
@@ -109,44 +196,6 @@ class DreamerRacer(Node):
         """
 
         self.observations["lidar"] = self.lidar_postproccess(scan_msg)
-
-        if self.observations["lidar"] is not None and len(self.observations["lidar"]) > 0:  #Check for None and empty array
-            scan_noised = scan_msg
-            scan_noised.ranges = list(np.flip(self.observations["lidar"]).astype(float))
-            self.pub_scan.publish(scan_noised)
-
-            # Dreamer Integration
-            observation = np.array(self.observations["lidar"])
-            self.scan_buffer.append(observation)
-
-            if len(self.scan_buffer) >= self.sequence_length:
-                observation = np.array(self.scan_buffer[-self.sequence_length:])
-                self.scan_buffer = self.scan_buffer[-self.sequence_length:]
-                observation_tensor = torch.as_tensor(observation, dtype=torch.float32, device=self.agent._config.device).unsqueeze(0)
-
-                try:
-                    policy_output, _ = self.agent(observation_tensor, None, None, training=False)  # No reset or state needed
-                    action = policy_output["action"].cpu().numpy()[0] # Get the action and convert it to numpy array
-
-                    steering = float(action[0])  # Extract steering (float)
-                    speed = float(action[1])     # Extract speed (float)
-                    speed = min(speed / 2, 1.5)  # Speed limit (adjust as needed)
-
-                    drive_msg = self._convert_action(steering, speed)
-                    self.pub_drive.publish(drive_msg)
-
-                except Exception as e:
-                    print(f"Error getting action: {e}")
-                    steering = 0.0
-                    speed = 0.0
-        else:
-            self.get_logger().warn("Skipping scan: No valid LiDAR data received.")
-
-        # TODO: Port dreamer here:
-        # agent_action = self.agent.get_action(scan)
-        # steering = float(agent_action[0])
-        # speed = float(agent_action[1])
-        # speed = min(float(agent_action[1]) / 2, 1.5)
 
         steering = 0.0
         speed = 1.0
@@ -195,9 +244,7 @@ class DreamerRacer(Node):
             print("observation = ", filtered_data); # TODO: debug range
         
         obs_lidar = filtered_data
-        extra_noise_stddev = 0.3 # 0.3m
-        extra_noise = np.random.normal(0, extra_noise_stddev, 1080)
-        return obs_lidar + extra_noise # adding noise (remove extra_noise to get rid of noise)
+        return obs_lidar 
 
     def _convert_action(self, steering_angle, speed) -> AckermannDriveStamped:
         """

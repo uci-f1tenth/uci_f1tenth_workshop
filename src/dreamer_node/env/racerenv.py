@@ -1,20 +1,45 @@
 import gymnasium as gym
+import numpy as np
 
 class RacerEnv:
-    metadata = {}
-    def __init__(self):
+    metadata = {} 
+    def __init__(self, min_steering=-0.418, max_steering=0.418, min_speed=1.5, max_speed=6.0):
+        # Values from https://github.com/CPS-TUWien/racing_dreamer/blob/398970bf2b4bf167cf53c0d0b0128a1b63d3377d/ros_agent/agents/follow_the_gap/src/agent.py#L72
+        self.min_steering = min_steering
+        self.max_steering = max_steering
+        self.min_speed = min_speed
+        self.max_speed = max_speed
+        
+        # Define the action space as a normalized continuous space (-1 to 1)
+        self._action_space = gym.spaces.Box(low=np.array([-1.0, -1.0], dtype=np.float32),
+                                           high=np.array([1.0, 1.0], dtype=np.float32),
+                                           shape=(2,),
+                                           dtype=np.float32)
         pass
 
     @property
     def observation_space(self):
         pass
+    def denormalize(self, normalized_value, min_physical_value, max_physical_value):
+        return normalized_value * (max_physical_value - min_physical_value) / 2.0 + \
+               (max_physical_value + min_physical_value) / 2.0
 
     @property
     def action_space(self):
         pass
 
-    def step(self):
+    def step(self, action):
         pass
+      # Denormalize action to physical control values
+        steering = self.denormalize(action[0], self.min_steering, self.max_steering)
+        speed = self.denormalize(action[1], self.min_speed, self.max_speed)
+      # Use steering and speed for simulation
+        observation = self.get_observation()
+        reward = self.calculate_reward()
+        done = self.check_done()
+        info = {}
+        
+        return observation, reward, done, info
 
     def reset(self):
         pass

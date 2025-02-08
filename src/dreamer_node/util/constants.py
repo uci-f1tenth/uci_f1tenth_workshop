@@ -158,6 +158,11 @@ class Config:
             "action_repeat": 1,
             "envs": 1,
             "train_ratio": 512,
-            "encoder": {"mlp_keys": ".*", "cnn_keys": "$^"},
-            "decoder": {"mlp_keys": ".*", "cnn_keys": "$^"},
+            "encoder": {"mlp_keys": "lidar", "cnn_keys": "image", "mlp_units":512,
+                        "act": "SiLU", "cnn_depth": 32, "mlp_layers":4, "symlog_inpts":False,
+                        "norm": True, "kernel_size":4, "minres":4},
+            "decoder": {"mlp_keys": "lidar", "cnn_keys": "image", "norm": True,
+                        "act": "SiLU", "mlp_units":512,"cnn_depth": 32, "mlp_layers":4,
+                        "kernel_size":4,"minres":4, "cnn_sigmoid": True, "image_dist": "mse", 
+                        "vector_dist": "normal", "outscale": 1.0},
         }

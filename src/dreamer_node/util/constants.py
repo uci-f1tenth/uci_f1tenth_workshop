@@ -158,29 +158,11 @@ class Config:
             "action_repeat": 1,
             "envs": 1,
             "train_ratio": 512,
-            "encoder": {"mlp_keys": ".*", "cnn_keys": "$^"},
-            "decoder": {"mlp_keys": ".*", "cnn_keys": "$^"},
+            "encoder": {"mlp_keys": "lidar", "cnn_keys": "image", "mlp_units":512,
+                        "act": "SiLU", "cnn_depth": 32, "mlp_layers":4, "symlog_inpts":False,
+                        "norm": True, "kernel_size":4, "minres":4},
+            "decoder": {"mlp_keys": "lidar", "cnn_keys": "image", "norm": True,
+                        "act": "SiLU", "mlp_units":512,"cnn_depth": 32, "mlp_layers":4,
+                        "kernel_size":4,"minres":4, "cnn_sigmoid": True, "image_dist": "mse", 
+                        "vector_dist": "normal", "outscale": 1.0},
         }
-
-        # PARAMS for networks.MultiEncoder for image data and LiDAR data
-        self.shapes = {
-            "image": (64, 64, 3),  # Image input
-            "lidar": (1080,),      # LiDAR input
-        }
-        self.encoder_cnn_keys = "image"
-        self.encoder_mlp_keys = "lidar"
-        self.encoder_cnn_depth=48        # Number of CNN layers
-        self.encoder_mlp_layers=4        # Number of MLP layers
-        self.encoder_mlp_units=512       # Units per MLP layer
-        self.encoder_act="SiLU"          # Activation function
-        self.encoder_norm="layer"        # Normalization (e.g., LayerNorm)
-        self.encoder_kernel_size=4       # CNN kernel size
-        self.encoder_minres=4            # Minimum resolution for CNN
-        self.encoder_symlog_inputs=False # No symlog for LiDAR (unless needed)
-
-        # PARAMS for networks.MultiDecoder
-        self.feat_size = 1024           # Size of latent features
-        self.decoder_cnn_sigmoid = True  # Sigmoid for image outputs (pixel values in [0, 1])
-        self.decoder_image_dist = "mse"  # MSE loss for images
-        self.decoder_vector_dist = "normal" # Gaussian loss for LiDAR
-        self.decoder_outscale = 1.0      # Output scaling factor

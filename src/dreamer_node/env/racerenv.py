@@ -3,8 +3,9 @@ import numpy as np
 
 class RacerEnv:
     metadata = {} 
-    def __init__(self, min_steering=-0.418, max_steering=0.418, min_speed=1.5, max_speed=6.0):
-        # Values from https://github.com/CPS-TUWien/racing_dreamer/blob/398970bf2b4bf167cf53c0d0b0128a1b63d3377d/ros_agent/agents/follow_the_gap/src/agent.py#L72
+    def __init__(self, min_steering=-0.418, max_steering=0.418, min_speed=1.5, max_speed=19.67):
+        # Values from https://github.com/Tinker-Twins/AutoDRIVE-F1TENTH-ARMLab/blob/main/Car-Parameters.md or https://github.com/CPS-TUWien/racing_dreamer/blob/398970bf2b4bf167cf53c0d0b0128a1b63d3377d/ros_agent/agents/follow_the_gap/src/agent.py#L72
+        #
         self.min_steering = min_steering
         self.max_steering = max_steering
         self.min_speed = min_speed

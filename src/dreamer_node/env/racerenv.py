@@ -1,37 +1,38 @@
 import gymnasium as gym
 import numpy as np
 
-MIN_LIDAR = 0.021
-MAX_LIDAR = 30.0
 
-class RacerEnv:
+class RacerEnv(gym.Env):
     metadata = {}
-    def __init__(self):
-        pass
+    def __init__(self, min_lidar = 0.021, max_lidar = 30.0, num_lidar = 1080, inculde_odom = False):
+        
+        self.lidar_space = gym.spaces.Box(low = np.array([min_lidar] * num_lidar, dtype = np.float32),
+                                          high = np.array([max_lidar] * num_lidar, dtype = np.float32),
+                                          shape = (num_lidar,), dtype = np.float32)
+        
+        #odom data: [x, y, z, linear_velocity, angular_velocity]
+        if self.include_odom:
+            self.odom_space = gym.spaces.Box(low = -np.inf, high = np.inf, shape = (5,), dtype = np.float32)
+        else:
+            self.odom_space = None
 
     @property
     def observation_space(self):
         '''
         returns a dictionary containing LiDAR data & odomoetry data (optional)
         '''
-        
-        self.lidar_space = gym.spaces.Box(low = np.array([MIN_LIDAR] * 1081, dtype = np.float32),
-                                          high = np.array([MAX_LIDAR] * 1081, dtype = np.float32),
-                                          shape = (1081,), dtype = np.float32)
         spaces = {"lidar": self.lidar_space}
-        
         if self.include_odom:
-            self.odom_space = gym.spaces.Box(low = -np.inf, high = np.inf, shape = (1081,), dtype = np.float32)
             spaces["odom"] = self.odom_space
-        return gym.spaces.Dict(spaces)
+            
+        return gym.spaces.Dict(spaces)      
         
-
     @property
     def action_space(self):
         pass
-
+    
     def step(self, action, lidar_data, odom_data = None):
-        #normalized_lidar = normalize_lidar(lidar_data)
+        
         steering = self.denormalize(action[0], self.min_sterring, self.max_steering)
         speed = self.denormalize(action[1], self.min_speed, self.max_speed)
         
@@ -41,8 +42,11 @@ class RacerEnv:
         if self.include_odom and odom_data != None:
             observation["odom"] = np.array(odom_data, dtype = np.float32)
 
+        reward = 0.0
+        done = False
         info = {}
-        return observation, info
+        
+        return observation, reward, done, info
         
 
     def reset(self, seed = None, options = None, lidar_data = None, odom_data = None):

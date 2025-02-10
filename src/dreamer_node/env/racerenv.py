@@ -21,9 +21,22 @@ class RacerEnv:
     @property
     def observation_space(self):
         pass
-    def denormalize(self, normalized_value, min_physical_value, max_physical_value):
-        return normalized_value * (max_physical_value - min_physical_value) / 2.0 + \
-               (max_physical_value + min_physical_value) / 2.0
+
+    def denormalize(self, normalized_value: float, min_physical_value: float, max_physical_value: float) -> float:
+        """
+        Denormalize a value from the range [-1, 1] to the range [min_physical_value, max_physical_value]
+        
+        Args:
+            normalized_value: The normalized value to denormalize
+            min_physical_value: The minimum value of the physical range
+            max_physical_value: The maximum value of the physical range
+        
+        Returns:
+            The denormalized value
+        """
+        mean_physical_value = (min_physical_value + max_physical_value) / 2
+        physical_amplitude = (max_physical_value - min_physical_value) / 2
+        return mean_physical_value + normalized_value * physical_amplitude
 
     @property
     def action_space(self):

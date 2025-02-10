@@ -50,6 +50,7 @@ class RacerEnv(gym.Env):
         
 
     def reset(self, seed = None, options = None, lidar_data = None, odom_data = None):
+        super().reset(seed = seed)
         if lidar_data is None:
             raise ValueError("Reset: LiDAR data does not exist")
         

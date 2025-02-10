@@ -1,4 +1,4 @@
-import gymnasium as gym
+# import gymnasium as gym # TODO commented for testing
 import numpy as np
 
 class RacerEnv:
@@ -12,10 +12,11 @@ class RacerEnv:
         self.max_speed = max_speed
         
         # Define the action space as a normalized continuous space (-1 to 1)
-        self._action_space = gym.spaces.Box(low=np.array([-1.0, -1.0], dtype=np.float32),
-                                           high=np.array([1.0, 1.0], dtype=np.float32),
-                                           shape=(2,),
-                                           dtype=np.float32)
+        # TODO commented for testing
+        # self._action_space = gym.spaces.Box(low=np.array([-1.0, -1.0], dtype=np.float32),
+        #                                    high=np.array([1.0, 1.0], dtype=np.float32),
+        #                                    shape=(2,),
+        #                                    dtype=np.float32)
         pass
 
     @property

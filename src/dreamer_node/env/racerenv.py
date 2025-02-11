@@ -1,4 +1,4 @@
-# import gymnasium as gym # TODO commented for testing
+import gymnasium as gym
 import numpy as np
 
 from util.constants import Constants
@@ -13,15 +13,7 @@ class RacerEnv:
         self._max_steering = constants.max_steering
         self._min_speed = constants.min_speed
         self._max_speed = constants.max_speed
-        
-        # Define the action space as a normalized continuous space (-1 to 1)
-        # TODO commented for testing
-        # self._action_space = gym.spaces.Box(low=np.array([-1.0, -1.0], dtype=np.float32),
-        #                                    high=np.array([1.0, 1.0], dtype=np.float32),
-        #                                    shape=(2,),
-        #                                    dtype=np.float32)
-        pass
-
+    
     @property
     def observation_space(self):
         pass
@@ -44,7 +36,11 @@ class RacerEnv:
 
     @property
     def action_space(self):
-        pass
+        return gym.spaces.Box(low=np.array([-1.0, -1.0], dtype=np.float32),
+                              high=np.array([1.0, 1.0], dtype=np.float32),
+                              shape=(2,),
+                              dtype=np.float32)
+
 
     def step(self, action):
         pass
@@ -61,5 +57,3 @@ class RacerEnv:
 
     def reset(self):
         pass
-
-# action space pull req

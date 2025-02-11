@@ -4,8 +4,9 @@ import numpy as np
 
 class RacerEnv(gym.Env):
     metadata = {}
-    def __init__(self, min_lidar = 0.021, max_lidar = 30.0, num_lidar = 1080, inculde_odom = False):
+    def __init__(self, min_lidar = 0.021, max_lidar = 30.0, num_lidar = 1080, include_odom = False):
         
+        self.include_odom = include_odom        
         self.lidar_space = gym.spaces.Box(low = np.array([min_lidar] * num_lidar, dtype = np.float32),
                                           high = np.array([max_lidar] * num_lidar, dtype = np.float32),
                                           shape = (num_lidar,), dtype = np.float32)
@@ -33,7 +34,7 @@ class RacerEnv(gym.Env):
     
     def step(self, action, lidar_data, odom_data = None):
         
-        steering = self.denormalize(action[0], self.min_sterring, self.max_steering)
+        steering = self.denormalize(action[0], self.min_steering, self.max_steering)
         speed = self.denormalize(action[1], self.min_speed, self.max_speed)
         
         lidar_data = np.clip(lidar_data, self.lidar_space.low, self.lidar_space.high)

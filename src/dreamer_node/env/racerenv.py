@@ -1,15 +1,18 @@
 # import gymnasium as gym # TODO commented for testing
 import numpy as np
 
+from util.constants import Constants
+
 class RacerEnv:
     metadata = {} 
-    def __init__(self, min_steering=-0.418, max_steering=0.418, min_speed=1.5, max_speed=19.67):
+    def __init__(self):
         # Values from https://github.com/Tinker-Twins/AutoDRIVE-F1TENTH-ARMLab/blob/main/Car-Parameters.md or https://github.com/CPS-TUWien/racing_dreamer/blob/398970bf2b4bf167cf53c0d0b0128a1b63d3377d/ros_agent/agents/follow_the_gap/src/agent.py#L72
-        #
-        self.min_steering = min_steering
-        self.max_steering = max_steering
-        self.min_speed = min_speed
-        self.max_speed = max_speed
+        
+        constants = Constants()
+        self._min_steering = constants.min_steering
+        self._max_steering = constants.max_steering
+        self._min_speed = constants.min_speed
+        self._max_speed = constants.max_speed
         
         # Define the action space as a normalized continuous space (-1 to 1)
         # TODO commented for testing
@@ -46,8 +49,8 @@ class RacerEnv:
     def step(self, action):
         pass
       # Denormalize action to physical control values
-        steering = self.denormalize(action[0], self.min_steering, self.max_steering)
-        speed = self.denormalize(action[1], self.min_speed, self.max_speed)
+        steering = self.denormalize(action[0], self._min_steering, self._max_steering)
+        speed = self.denormalize(action[1], self._min_speed, self._max_speed)
       # Use steering and speed for simulation
         observation = self.get_observation()
         reward = self.calculate_reward()

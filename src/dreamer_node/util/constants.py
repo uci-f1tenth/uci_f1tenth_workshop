@@ -16,6 +16,12 @@ class Constants:
         # Dreamer
         self.DEVICE = "cuda"
 
+        # action space
+        self.min_steering = -0.418
+        self.max_steering = 0.418
+        self.min_speed = 1.5
+        self.max_speed = 19.67
+
 class Config:
     def __init__(self):
         self.logdir = Path("/dreamer/resource/log")

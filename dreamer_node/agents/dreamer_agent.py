@@ -8,17 +8,14 @@ from sensor_msgs.msg import LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped
 from typing import Tuple, List
 import math
-import os
-import argparse
 import ruamel.yaml as yaml
 from ruamel.yaml import YAML
 import pathlib
-import gym
 import torch
 from torch import distributions as torchd
 
 from util.constants import Constants
-from util.constants import Config 
+from util.constants import Config
 
 from dreamer.dream import Dreamer
 from dreamer.dream import Parallel, Damy
@@ -26,21 +23,22 @@ import dreamer.tools as tools
 
 
 class DreamerRacer(Node):
-    """ 
+    """
     Implement Dreamer on the car
     """
+
     def __init__(self):
-        super().__init__('dreamer_node')
+        super().__init__("dreamer_node")
         # constants
         self.const = Constants()
-        self.config = Config() 
+        self.config = Config()
 
         # observations
         self.observations = dict()
 
         # pause on initial start
         self.speed = 0.0
-        self.get_logger().info('Dreamer node has started')
+        self.get_logger().info("Dreamer node has started")
 
         # variables
         self.time = self.get_clock().now()
@@ -48,26 +46,16 @@ class DreamerRacer(Node):
 
         # subscribers/publishers
         self.sub_scan = self.create_subscription(
-            LaserScan,
-            self.const.LIDAR_TOPIC,
-            self.scan_callback, 
-            10
+            LaserScan, self.const.LIDAR_TOPIC, self.scan_callback, 10
         )
-        
+
         self.pub_drive = self.create_publisher(
-            AckermannDriveStamped, 
-            self.const.DRIVE_TOPIC, 
-            10
+            AckermannDriveStamped, self.const.DRIVE_TOPIC, 10
         )
-        
-        self.pub_scan = self.create_publisher(
-            LaserScan,
-            self.const.LIDAR_TOPIC,
-            10
-        )
+
+        self.pub_scan = self.create_publisher(LaserScan, self.const.LIDAR_TOPIC, 10)
 
         self.dreamer_init(self.config)
-
 
     def dreamer_init(self, config):
         tools.set_seed_everywhere(config.seed)
@@ -85,7 +73,9 @@ class DreamerRacer(Node):
         logdir.mkdir(parents=True, exist_ok=True)
         config.traindir.mkdir(parents=True, exist_ok=True)
         config.evaldir.mkdir(parents=True, exist_ok=True)
-        step = sum(int(str(n).split("-")[-1][:-4]) - 1 for n in config.traindir.glob("*.npz"))
+        step = sum(
+            int(str(n).split("-")[-1][:-4]) - 1 for n in config.traindir.glob("*.npz")
+        )
         # step in logger is environmental step
         logger = tools.Logger(logdir, config.action_repeat * step)
 
@@ -116,7 +106,14 @@ class DreamerRacer(Node):
         config.num_actions = acts.n if hasattr(acts, "n") else acts.shape[0]
 
         if not config.offline_traindir:
-            prefill = max(0, config.prefill - sum(int(str(n).split("-")[-1][:-4]) - 1 for n in config.traindir.glob("*.npz")))
+            prefill = max(
+                0,
+                config.prefill
+                - sum(
+                    int(str(n).split("-")[-1][:-4]) - 1
+                    for n in config.traindir.glob("*.npz")
+                ),
+            )
             print(f"Prefill dataset ({prefill} steps).")
             if hasattr(acts, "discrete"):
                 random_actor = tools.OneHotDist(
@@ -162,7 +159,9 @@ class DreamerRacer(Node):
         if (logdir / "latest.pt").exists():
             checkpoint = torch.load(logdir / "latest.pt")
             agent.load_state_dict(checkpoint["agent_state_dict"])
-            tools.recursively_load_optim_state_dict(agent, checkpoint["optims_state_dict"])
+            tools.recursively_load_optim_state_dict(
+                agent, checkpoint["optims_state_dict"]
+            )
             agent._should_pretrain._once = False
 
     def make_env(self, config, mode, id):
@@ -174,21 +173,20 @@ class DreamerRacer(Node):
         dataset = tools.from_generator(generator, config.batch_size)
         return dataset
 
-    
     def scan_callback(self, scan_msg: LaserScan):
         """
-        Processes incoming LaserScan messages from the LiDAR sensor, 
-        calculates appropriate driving commands (speed and steering angle), 
+        Processes incoming LaserScan messages from the LiDAR sensor,
+        calculates appropriate driving commands (speed and steering angle),
         and publishes these commands to the F1Tenth car's control interface.
 
-        This function is the primary handler for LiDAR data and implements the 
-        core logic for the car's autonomous navigation. It analyzes the 
-        scan data to perceive the environment, detects obstacles, and 
-        determines the optimal path to follow.  The calculated speed and 
+        This function is the primary handler for LiDAR data and implements the
+        core logic for the car's autonomous navigation. It analyzes the
+        scan data to perceive the environment, detects obstacles, and
+        determines the optimal path to follow.  The calculated speed and
         steering commands are then published to control the car's movement.
 
         Args:
-            scan_msg: A LaserScan message containing the distance measurements 
+            scan_msg: A LaserScan message containing the distance measurements
                       from the LiDAR sensor.
 
         Returns:
@@ -208,8 +206,8 @@ class DreamerRacer(Node):
         """
         Processes raw LaserScan data to extract usable information for navigation.
 
-        This function filters, extracts features (e.g., obstacles, distances), 
-        or transforms the raw LiDAR data into a format suitable for path planning 
+        This function filters, extracts features (e.g., obstacles, distances),
+        or transforms the raw LiDAR data into a format suitable for path planning
         or control.
 
         Args:
@@ -222,11 +220,11 @@ class DreamerRacer(Node):
         current_stamp = Time.from_msg(lidar_data.header.stamp)
         last_scan_time = current_stamp.nanoseconds - self.time.nanoseconds
         duration = Duration(nanoseconds=last_scan_time)
-        
-        if duration.nanoseconds / 1e9 < (0.08 - 0.001): # limit to approx. 10Hz
-            assert f'Error: last laser scan time is {last_scan_time}. Limit = 10Hz'
+
+        if duration.nanoseconds / 1e9 < (0.08 - 0.001):  # limit to approx. 10Hz
+            assert f"Error: last laser scan time is {last_scan_time}. Limit = 10Hz"
             return
-        
+
         # receive LiDAR scan rte
         self.time = current_stamp
 
@@ -235,16 +233,19 @@ class DreamerRacer(Node):
 
         if not hasattr(self, "last_log_time"):
             self.last_log_time = self.get_clock().now()
-        
+
         elapsed_time = (self.get_clock().now() - self.last_log_time).nanoseconds / 1e9
-        
+
         if elapsed_time >= 3:
             self.last_log_time = self.get_clock().now()
-            print('dreamer received LIDAR scan @ rate:', last_scan_time / 1e9) # TODO: debug for scan rate
-            print("observation = ", filtered_data); # TODO: debug range
-        
+            print(
+                "dreamer received LIDAR scan @ rate:", last_scan_time / 1e9
+            )  # TODO: debug for scan rate
+            print("observation = ", filtered_data)
+            # TODO: debug range
+
         obs_lidar = filtered_data
-        return obs_lidar 
+        return obs_lidar
 
     def _convert_action(self, steering_angle, speed) -> AckermannDriveStamped:
         """
@@ -263,10 +264,15 @@ class DreamerRacer(Node):
         drive_msg = AckermannDriveStamped()
         drive_msg.drive.steering_angle = steering_angle
         drive_msg.drive.speed = speed
-        print('dreamer published action: steering_angle = ', steering_angle, "; speed = ", speed)
+        print(
+            "dreamer published action: steering_angle = ",
+            steering_angle,
+            "; speed = ",
+            speed,
+        )
         return drive_msg
 
-    def recursive_update(self, base, update): 
+    def recursive_update(self, base, update):
         for key, value in update.items():
             if isinstance(value, dict) and key in base:
                 self.recursive_update(base[key], value)
@@ -280,16 +286,18 @@ class DreamerRacer(Node):
         Args:
             lidar_data: original scan message
             range: the arc to filter for (e.g. (-pi/2, +pi/2))
-        
+
         Returns:
             List of filtered ranges
         """
-        raw_scan = list(np.flip(np.array(lidar_data.ranges, dtype=float))) # include liDAR observations
+        raw_scan = list(
+            np.flip(np.array(lidar_data.ranges, dtype=float))
+        )  # include liDAR observations
 
         raw_min_angle = lidar_data.angle_min
         raw_max_angle = lidar_data.angle_max
         target_min_angle, target_max_angle = range
-        
+
         raw_arc_length = raw_max_angle - raw_min_angle
         number_of_ranges = len(raw_scan)
         number_of_ranges_per_radian = number_of_ranges / raw_arc_length
@@ -298,9 +306,12 @@ class DreamerRacer(Node):
         skipped_max_angle = raw_max_angle - target_max_angle
 
         min_index = math.ceil(skipped_min_angle * number_of_ranges_per_radian)
-        max_index = math.floor(number_of_ranges - skipped_max_angle * number_of_ranges_per_radian)
+        max_index = math.floor(
+            number_of_ranges - skipped_max_angle * number_of_ranges_per_radian
+        )
 
-        return raw_scan[min_index : max_index]
+        return raw_scan[min_index:max_index]
+
 
 def main(args=None):
     rclpy.init(args=args)
@@ -315,5 +326,5 @@ def main(args=None):
     rclpy.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

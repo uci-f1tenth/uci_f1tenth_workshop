@@ -1,15 +1,14 @@
 [project]
-name = "racecar-gym"
+name = "dreamer-node"
 version = "0.1.0"
+description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "gymnasium>=1.0.0",
-    "numpy>=2.2.2",
-    "pettingzoo>=1.24.3",
-    "pybullet>=3.2.7",
-    "scipy>=1.15.1",
-    "yamldataclassconfig>=1.5.0",
+    "numpy>=2.2.3",
+    "ruamel-yaml>=0.18.10",
+    "torch>=2.6.0",
+    "racecar-gym",
 ]
 
 [build-system]
@@ -21,3 +20,6 @@ allow-direct-references = true
 
 [tool.uv]
 dev-dependencies = []
+
+[tool.uv.sources]
+racecar-gym = { workspace = true }

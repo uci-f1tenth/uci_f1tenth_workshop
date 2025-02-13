@@ -1,5 +1,5 @@
 {
-    "dockerComposeFile": "../f1tenth_gym_ros/docker-compose.yml",
+    "dockerComposeFile": "../docker-compose.yml",
     "service": "sim",
     "workspaceFolder": "/sim_ws/",
     "customizations": {

@@ -2,11 +2,11 @@ from typing import Optional
 
 import numpy as np
 import pybullet
-from nptyping import NDArray
+from numpy.typing import NDArray
 
 from racecar_gym.core import Agent
 
-def get_velocity(id: int) -> NDArray[(6,), np.float]:
+def get_velocity(id: int) -> NDArray[np.float64]:
     linear, angular = pybullet.getBaseVelocity(id)
     position, orientation = pybullet.getBasePositionAndOrientation(id)
     rotation = pybullet.getMatrixFromQuaternion(orientation)
@@ -16,7 +16,7 @@ def get_velocity(id: int) -> NDArray[(6,), np.float]:
     return np.append(linear, angular)
 
 
-def get_pose(id: int) -> Optional[NDArray[(6,), np.float]]:
+def get_pose(id: int) -> Optional[NDArray[np.float64]]:
     position, orientation = pybullet.getBasePositionAndOrientation(id)
     if any(np.isnan(position)) or any(np.isnan(orientation)):
         return None

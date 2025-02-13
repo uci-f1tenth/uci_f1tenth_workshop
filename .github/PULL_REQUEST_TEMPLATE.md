@@ -36,5 +36,5 @@
 <!--- Go over all the following points, and put an `x` in all the boxes that apply. -->
 <!--- If you're unsure about any of these, don't hesitate to ask. We're here to help. -->
 
-- [ ] My code involves a change to the database schema.
+- [ ] My code involves a change to the f1tenth car hardware.
 - [ ] My code requires a change to the documentation.

@@ -33,9 +33,10 @@ wheels = [
 [[package]]
 name = "dreamer-node"
 version = "0.1.0"
-source = { virtual = "dreamer_node" }
+source = { editable = "dreamer_node" }
 dependencies = [
     { name = "numpy" },
+    { name = "racecar-gym" },
     { name = "ruamel-yaml" },
     { name = "torch" },
 ]
@@ -43,9 +44,13 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "numpy", specifier = ">=2.2.3" },
+    { name = "racecar-gym", editable = "gyms/racecar_gym" },
     { name = "ruamel-yaml", specifier = ">=0.18.10" },
     { name = "torch", specifier = ">=2.6.0" },
 ]
+
+[package.metadata.requires-dev]
+dev = []
 
 [[package]]
 name = "farama-notifications"
@@ -510,6 +515,7 @@ name = "uci-f1tenth-workshop"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "dreamer-node" },
     { name = "racecar-gym" },
 ]
 
@@ -519,7 +525,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "racecar-gym", editable = "gyms/racecar_gym" }]
+requires-dist = [
+    { name = "dreamer-node", editable = "dreamer_node" },
+    { name = "racecar-gym", editable = "gyms/racecar_gym" },
+]
 
 [package.metadata.requires-dev]
 dev = [{ name = "gymnasium", specifier = ">=1.0.0" }]

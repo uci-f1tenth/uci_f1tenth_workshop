@@ -5,6 +5,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "racecar-gym",
+    "dreamer-node",
 ]
 
 [tool.uv]
@@ -12,6 +13,7 @@ dev-dependencies = ["gymnasium>=1.0.0"]
 
 [tool.uv.sources]
 racecar-gym = { workspace = true }
+dreamer-node = { workspace = true }
 
 [tool.uv.workspace]
 members = ["gyms/racecar_gym", "dreamer_node"]

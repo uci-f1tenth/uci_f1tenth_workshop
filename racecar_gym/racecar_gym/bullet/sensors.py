@@ -5,7 +5,7 @@ from typing import Any, TypeVar, Tuple, Union
 import gymnasium
 import numpy as np
 import pybullet as p
-from nptyping import NDArray
+from numpy.typing import NDArray
 
 from racecar_gym.bullet import util
 from racecar_gym.core import Sensor
@@ -57,7 +57,7 @@ class FixedTimestepSensor(BulletSensor[T], ABC):
         self._sensor.reset(body_id=body_id, joint_index=joint_index)
 
 
-class Lidar(BulletSensor[NDArray[(Any,), np.float]]):
+class Lidar(BulletSensor[NDArray[np.float64]]):
     @dataclass
     class Config:
         accuracy: float
@@ -111,7 +111,7 @@ class Lidar(BulletSensor[NDArray[(Any,), np.float]]):
                               dtype=np.float64,
                               shape=(self._rays,))
 
-    def observe(self) -> NDArray[(Any,), np.float]:
+    def observe(self) -> NDArray[np.float64]:
         results = p.rayTestBatch(self._from, self._to, 0,
             parentObjectUniqueId=self.body_id,
             parentLinkIndex=self.joint_index)
@@ -158,7 +158,7 @@ class Lidar(BulletSensor[NDArray[(Any,), np.float]]):
             angle += increment
 
 
-class RGBCamera(BulletSensor[NDArray[(Any, Any, 3), np.int]]):
+class RGBCamera(BulletSensor[NDArray[np.int64]]):
     @dataclass
     class Config:
         width: int
@@ -184,7 +184,7 @@ class RGBCamera(BulletSensor[NDArray[(Any, Any, 3), np.int]]):
                               shape=(self._config.height, self._config.width, 3),
                               dtype=np.uint8)
 
-    def observe(self) -> NDArray[(Any, Any, 3), np.int]:
+    def observe(self) -> NDArray[np.int64]:
         width, height = self._config.width, self._config.height
         state = p.getLinkState(self.body_id, linkIndex=self.joint_index, computeForwardKinematics=True)
         position, orientation = state[0], state[1]
@@ -207,7 +207,7 @@ class RGBCamera(BulletSensor[NDArray[(Any, Any, 3), np.int]]):
         return rgb_array
 
 
-class AccelerationSensor(BulletSensor[NDArray[(6,), np.float]]):
+class AccelerationSensor(BulletSensor[NDArray[np.float64]]):
     @dataclass
     class Config:
         time_delta: float
@@ -226,7 +226,7 @@ class AccelerationSensor(BulletSensor[NDArray[(6,), np.float]]):
         low = -high
         return gymnasium.spaces.Box(low=low, high=high, dtype=np.float64)
 
-    def observe(self) -> NDArray[(6,), np.float]:
+    def observe(self) -> NDArray[np.float64]:
         velocity = util.get_velocity(id=self.body_id)
         acceleration = (velocity - self._last_velocity) / self._config.time_delta
         scale = np.abs(velocity * self._config.gaussian_noise + 0.01)
@@ -237,7 +237,7 @@ class AccelerationSensor(BulletSensor[NDArray[(6,), np.float]]):
         return acceleration
 
 
-class VelocitySensor(BulletSensor[NDArray[(6,), np.float]]):
+class VelocitySensor(BulletSensor[NDArray[np.float64]]):
     @dataclass
     class Config:
         gaussian_noise: float
@@ -260,14 +260,14 @@ class VelocitySensor(BulletSensor[NDArray[(6,), np.float]]):
         low = -high
         return gymnasium.spaces.Box(low=low, high=high, dtype=np.float64)
 
-    def observe(self) -> NDArray[(6,), np.float]:
+    def observe(self) -> NDArray[np.float64]:
         velocity = self._get_velocity()
         if self._config.debug:
             print(f'[DEBUG][tacho] velocity: {[round(v, 2) for v in velocity]}')
         return velocity
 
 
-class PoseSensor(BulletSensor[NDArray[(6,), np.float]]):
+class PoseSensor(BulletSensor[NDArray[np.float64]]):
     @dataclass
     class Config:
         bounds: Tuple[float, float, float]
@@ -283,7 +283,7 @@ class PoseSensor(BulletSensor[NDArray[(6,), np.float]]):
         low = -high
         return gymnasium.spaces.Box(low=low, high=high, dtype=np.float64)
 
-    def observe(self) -> NDArray[(6,), np.float]:
+    def observe(self) -> NDArray[np.float64]:
         position, orientation = p.getBasePositionAndOrientation(self.body_id)
         orientation = p.getEulerFromQuaternion(orientation)
         pose = np.append(position, orientation)

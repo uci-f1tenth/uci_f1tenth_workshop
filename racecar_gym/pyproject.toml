@@ -1,0 +1,14 @@
+[project]
+name = "racecar-gym"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "gymnasium>=1.0.0",
+    "numpy>=2.2.2",
+    "pettingzoo>=1.24.3",
+    "pybullet>=3.2.7",
+    "scipy>=1.15.1",
+    "yamldataclassconfig>=1.5.0",
+]

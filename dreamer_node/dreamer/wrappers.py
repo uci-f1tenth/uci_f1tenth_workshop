@@ -1,5 +1,6 @@
 import datetime
-import gymnasium as gym
+# TODO: get rid of this
+import gym
 import numpy as np
 import uuid
 

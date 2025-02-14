@@ -1,13 +1,10 @@
 import gymnasium
-import racecar_gym.envs.gym_api
+import racecar_gym.envs.gym_api  # noqa: F401
 
-env = gymnasium.make(
-    id='SingleAgentAustria-v0',
-    render_mode='human'
-)
+env = gymnasium.make(id="SingleAgentAustria-v0", render_mode="human")
 
 done = False
-reset_options = dict(mode='grid')
+reset_options = dict(mode="grid")
 obs, info = env.reset(options=reset_options)
 
 while not done:

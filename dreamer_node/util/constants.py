@@ -1,17 +1,19 @@
 # constants.py
 from pathlib import Path
 import numpy as np
+
+
 class Constants:
     """
     Class to hold constants for the car.
     """
-    def __init__(self):
 
+    def __init__(self):
         self.FORWARD_SCAN_ARC = (np.deg2rad(-90.0), np.deg2rad(+90.0))
         # Topics
-        self.LIDAR_TOPIC = '/scan'
-        self.DRIVE_TOPIC = '/drive'
-        self.ODOMETRY_TOPIC = '/ego_racecar/odom'
+        self.LIDAR_TOPIC = "/scan"
+        self.DRIVE_TOPIC = "/drive"
+        self.ODOMETRY_TOPIC = "/ego_racecar/odom"
 
         # Dreamer
         self.DEVICE = "cuda"
@@ -21,6 +23,7 @@ class Constants:
         self.max_steering = 0.418
         self.min_speed = 1.5
         self.max_speed = 19.67
+
 
 class Config:
     def __init__(self):
@@ -103,7 +106,7 @@ class Config:
             "grad_clip": 100.0,
             "outscale": 1.0,
         }
-        self.critic = { # ... (critic config)
+        self.critic = {  # ... (critic config)
             "layers": 2,
             "dist": "symlog_disc",
             "slow_target": True,
@@ -115,13 +118,13 @@ class Config:
             "outscale": 0.0,
         }
 
-        self.reward_head = { # ... (reward_head config)
+        self.reward_head = {  # ... (reward_head config)
             "layers": 2,
             "dist": "symlog_disc",
             "loss_scale": 1.0,
             "outscale": 0.0,
         }
-        self.cont_head = { # ... (cont_head config)
+        self.cont_head = {  # ... (cont_head config)
             "layers": 2,
             "loss_scale": 1.0,
             "outscale": 1.0,
@@ -164,11 +167,31 @@ class Config:
             "action_repeat": 1,
             "envs": 1,
             "train_ratio": 512,
-            "encoder": {"mlp_keys": "lidar", "cnn_keys": "image", "mlp_units":512,
-                        "act": "SiLU", "cnn_depth": 32, "mlp_layers":4, "symlog_inpts":False,
-                        "norm": True, "kernel_size":4, "minres":4},
-            "decoder": {"mlp_keys": "lidar", "cnn_keys": "image", "norm": True,
-                        "act": "SiLU", "mlp_units":512,"cnn_depth": 32, "mlp_layers":4,
-                        "kernel_size":4,"minres":4, "cnn_sigmoid": True, "image_dist": "mse", 
-                        "vector_dist": "normal", "outscale": 1.0},
+            "encoder": {
+                "mlp_keys": "lidar",
+                "cnn_keys": "image",
+                "mlp_units": 512,
+                "act": "SiLU",
+                "cnn_depth": 32,
+                "mlp_layers": 4,
+                "symlog_inpts": False,
+                "norm": True,
+                "kernel_size": 4,
+                "minres": 4,
+            },
+            "decoder": {
+                "mlp_keys": "lidar",
+                "cnn_keys": "image",
+                "norm": True,
+                "act": "SiLU",
+                "mlp_units": 512,
+                "cnn_depth": 32,
+                "mlp_layers": 4,
+                "kernel_size": 4,
+                "minres": 4,
+                "cnn_sigmoid": True,
+                "image_dist": "mse",
+                "vector_dist": "normal",
+                "outscale": 1.0,
+            },
         }

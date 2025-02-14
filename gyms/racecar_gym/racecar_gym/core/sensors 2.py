@@ -3,11 +3,10 @@ from typing import Generic, TypeVar
 
 import gymnasium
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class Sensor(Generic[T], ABC):
-
     def __init__(self, name: str, type: str):
         self._name = name
         self._type = type

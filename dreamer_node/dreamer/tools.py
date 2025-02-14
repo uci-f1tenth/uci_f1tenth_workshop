@@ -1,10 +1,8 @@
-import datetime
 import collections
 import io
 import os
 import json
 import pathlib
-import re
 import time
 import random
 
@@ -16,7 +14,8 @@ from torch.nn import functional as F
 from torch import distributions as torchd
 
 
-to_np = lambda x: x.detach().cpu().numpy()
+def to_np(x):
+    return x.detach().cpu().numpy()
 
 
 def symlog(x):
@@ -215,13 +214,13 @@ def simulate(
 
                 if not is_eval:
                     step_in_dataset = erase_over_episodes(cache, limit)
-                    logger.scalar(f"dataset_size", step_in_dataset)
-                    logger.scalar(f"train_return", score)
-                    logger.scalar(f"train_length", length)
-                    logger.scalar(f"train_episodes", len(cache))
+                    logger.scalar("dataset_size", step_in_dataset)
+                    logger.scalar("train_return", score)
+                    logger.scalar("train_length", length)
+                    logger.scalar("train_episodes", len(cache))
                     logger.write(step=logger.step)
                 else:
-                    if not "eval_lengths" in locals():
+                    if "eval_lengths" not in locals():
                         eval_lengths = []
                         eval_scores = []
                         eval_done = False
@@ -231,12 +230,12 @@ def simulate(
 
                     score = sum(eval_scores) / len(eval_scores)
                     length = sum(eval_lengths) / len(eval_lengths)
-                    logger.video(f"eval_policy", np.array(video)[None])
+                    logger.video("eval_policy", np.array(video)[None])
 
                     if len(eval_scores) >= episodes and not eval_done:
-                        logger.scalar(f"eval_return", score)
-                        logger.scalar(f"eval_length", length)
-                        logger.scalar(f"eval_episodes", len(eval_scores))
+                        logger.scalar("eval_return", score)
+                        logger.scalar("eval_length", length)
+                        logger.scalar("eval_episodes", len(eval_scores))
                         logger.write(step=logger.step)
                         eval_done = True
     if is_eval:
@@ -673,7 +672,9 @@ def static_scan_for_lambda_return(fn, inputs, start):
     flag = True
     for index in indices:
         # (inputs, pcont) -> (inputs[index], pcont[index])
-        inp = lambda x: (_input[x] for _input in inputs)
+        def inp(x):
+            return (_input[x] for _input in inputs)
+
         last = fn(last, *inp(index))
         if flag:
             outputs = last
@@ -795,17 +796,20 @@ def static_scan(fn, inputs, start):
     indices = range(inputs[0].shape[0])
     flag = True
     for index in indices:
-        inp = lambda x: (_input[x] for _input in inputs)
+
+        def inp(x):
+            return (_input[x] for _input in inputs)
+
         last = fn(last, *inp(index))
         if flag:
-            if type(last) == type({}):
+            if last is dict:
                 outputs = {
                     key: value.clone().unsqueeze(0) for key, value in last.items()
                 }
             else:
                 outputs = []
                 for _last in last:
-                    if type(_last) == type({}):
+                    if _last is dict:
                         outputs.append(
                             {
                                 key: value.clone().unsqueeze(0)
@@ -816,14 +820,14 @@ def static_scan(fn, inputs, start):
                         outputs.append(_last.clone().unsqueeze(0))
             flag = False
         else:
-            if type(last) == type({}):
+            if last is dict:
                 for key in last.keys():
                     outputs[key] = torch.cat(
                         [outputs[key], last[key].unsqueeze(0)], dim=0
                     )
             else:
                 for j in range(len(outputs)):
-                    if type(last[j]) == type({}):
+                    if last[j] is dict:
                         for key in last[j].keys():
                             outputs[j][key] = torch.cat(
                                 [outputs[j][key], last[j][key].unsqueeze(0)], dim=0
@@ -832,7 +836,7 @@ def static_scan(fn, inputs, start):
                         outputs[j] = torch.cat(
                             [outputs[j], last[j].unsqueeze(0)], dim=0
                         )
-    if type(last) == type({}):
+    if last is dict:
         outputs = [outputs]
     return outputs
 

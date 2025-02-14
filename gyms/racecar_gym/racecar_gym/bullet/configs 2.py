@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any
 
 from yamldataclassconfig.config import YamlDataClassConfig
 
@@ -22,7 +22,7 @@ class ActuatorConfig(YamlDataClassConfig):
 @dataclass
 class VehicleConfig(YamlDataClassConfig):
     urdf_file: str = None
-    color: str = 'blue'
+    color: str = "blue"
     debug: bool = False
     actuators: List[ActuatorConfig] = field(default_factory=lambda: [])
     sensors: List[SensorConfig] = field(default_factory=lambda: [])

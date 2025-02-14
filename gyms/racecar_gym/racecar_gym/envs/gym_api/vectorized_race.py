@@ -6,18 +6,20 @@ from gymnasium.core import ObsType
 
 from .subprocess_env import SubprocessEnv
 
-class VectorizedRaceEnv(gymnasium.Env):
 
-    metadata = {'render.modes': ['follow', 'birds_eye']}
+class VectorizedRaceEnv(gymnasium.Env):
+    metadata = {"render.modes": ["follow", "birds_eye"]}
 
     def __init__(self, factories: List[Callable[[], Env]]):
         self._envs = [
-            SubprocessEnv(factory=factory, blocking=False)
-            for factory
-            in factories
+            SubprocessEnv(factory=factory, blocking=False) for factory in factories
         ]
-        self.observation_space = gymnasium.spaces.Tuple([env.observation_space for env in self._envs])
-        self.action_space = gymnasium.spaces.Tuple([env.action_space for env in self._envs])
+        self.observation_space = gymnasium.spaces.Tuple(
+            [env.observation_space for env in self._envs]
+        )
+        self.action_space = gymnasium.spaces.Tuple(
+            [env.action_space for env in self._envs]
+        )
 
     def step(self, actions):
         promises = []
@@ -35,7 +37,9 @@ class VectorizedRaceEnv(gymnasium.Env):
 
         return observations, rewards, terminates, truncates, states
 
-    def reset(self, *, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None) -> Tuple[ObsType, Dict[str, Any]]:
+    def reset(
+        self, *, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None
+    ) -> Tuple[ObsType, Dict[str, Any]]:
         observations = []
         for env in self._envs:
             obs = env.reset(seed=seed, options=options)
@@ -46,7 +50,7 @@ class VectorizedRaceEnv(gymnasium.Env):
         for env in self._envs:
             env.close()
 
-    def render(self, mode: str = 'follow', **kwargs):
+    def render(self, mode: str = "follow", **kwargs):
         renderings, promises = [], []
         for env in self._envs:
             promises.append(env.render())
@@ -55,4 +59,3 @@ class VectorizedRaceEnv(gymnasium.Env):
             renderings.append(promise())
 
         return renderings
-

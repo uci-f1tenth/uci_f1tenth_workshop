@@ -6,7 +6,6 @@ requires-python = ">=3.13"
 dependencies = [
     "racecar-gym",
     "gymnasium>=1.0.0",
-    "ruff>=0.9.6",
 ]
 
 [tool.uv.sources]
@@ -14,3 +13,10 @@ racecar-gym = { workspace = true }
 
 [tool.uv.workspace]
 members = ["gyms/racecar_gym", "dreamer_node"]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.15.0",
+    "ruff>=0.9.6",
+]
+

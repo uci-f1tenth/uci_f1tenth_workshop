@@ -1,6 +1,6 @@
 from multiprocessing.connection import Connection, Pipe
 from multiprocessing.context import Process
-from typing import Union, Any, Callable
+from typing import Any, Callable
 
 from gymnasium import Env
 

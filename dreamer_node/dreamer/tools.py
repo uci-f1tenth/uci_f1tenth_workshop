@@ -1,10 +1,8 @@
-import datetime
 import collections
 import io
 import os
 import json
 import pathlib
-import re
 import time
 import random
 
@@ -215,13 +213,13 @@ def simulate(
 
                 if not is_eval:
                     step_in_dataset = erase_over_episodes(cache, limit)
-                    logger.scalar(f"dataset_size", step_in_dataset)
-                    logger.scalar(f"train_return", score)
-                    logger.scalar(f"train_length", length)
-                    logger.scalar(f"train_episodes", len(cache))
+                    logger.scalar("dataset_size", step_in_dataset)
+                    logger.scalar("train_return", score)
+                    logger.scalar("train_length", length)
+                    logger.scalar("train_episodes", len(cache))
                     logger.write(step=logger.step)
                 else:
-                    if not "eval_lengths" in locals():
+                    if "eval_lengths" not in locals():
                         eval_lengths = []
                         eval_scores = []
                         eval_done = False
@@ -231,12 +229,12 @@ def simulate(
 
                     score = sum(eval_scores) / len(eval_scores)
                     length = sum(eval_lengths) / len(eval_lengths)
-                    logger.video(f"eval_policy", np.array(video)[None])
+                    logger.video("eval_policy", np.array(video)[None])
 
                     if len(eval_scores) >= episodes and not eval_done:
-                        logger.scalar(f"eval_return", score)
-                        logger.scalar(f"eval_length", length)
-                        logger.scalar(f"eval_episodes", len(eval_scores))
+                        logger.scalar("eval_return", score)
+                        logger.scalar("eval_length", length)
+                        logger.scalar("eval_episodes", len(eval_scores))
                         logger.write(step=logger.step)
                         eval_done = True
     if is_eval:

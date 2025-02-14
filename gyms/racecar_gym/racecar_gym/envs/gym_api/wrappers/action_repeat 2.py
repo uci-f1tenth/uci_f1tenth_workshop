@@ -1,5 +1,5 @@
 import gymnasium
-from typing import Callable, List, Any, Dict
+from typing import Callable, List, Any
 
 import numpy as np
 

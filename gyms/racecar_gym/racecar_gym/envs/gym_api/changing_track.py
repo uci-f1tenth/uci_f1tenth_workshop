@@ -4,7 +4,7 @@ from gymnasium.core import ObsType
 
 from .single_agent_race import SingleAgentRaceEnv
 from .multi_agent_race import MultiAgentRaceEnv
-from racecar_gym.envs.scenarios import MultiAgentScenario, SingleAgentScenario
+from racecar_gym.envs.scenarios import MultiAgentScenario, SingleAgentScenario  # noqa: F401
 from .changing_track_race_env import ChangingTrackRaceEnv
 
 

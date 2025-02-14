@@ -1,6 +1,6 @@
 from abc import ABC
 from dataclasses import dataclass
-from typing import Any, TypeVar, Tuple, Union
+from typing import TypeVar, Tuple, Union
 
 import gymnasium
 import numpy as np

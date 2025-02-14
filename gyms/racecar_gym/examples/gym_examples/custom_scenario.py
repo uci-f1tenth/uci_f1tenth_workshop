@@ -1,6 +1,6 @@
 from time import sleep
 import gymnasium
-from racecar_gym.envs import gym_api
+from racecar_gym.envs import gym_api  # noqa: F401
 
 env = gymnasium.make(
     id="MultiAgentRaceEnv-v0", scenario="../scenarios/custom.yml", render_mode="human"

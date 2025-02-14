@@ -8,8 +8,6 @@ from sensor_msgs.msg import LaserScan
 from ackermann_msgs.msg import AckermannDriveStamped
 from typing import Tuple, List
 import math
-import ruamel.yaml as yaml
-from ruamel.yaml import YAML
 import pathlib
 import torch
 from torch import distributions as torchd

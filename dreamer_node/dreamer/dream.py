@@ -125,7 +125,7 @@ class Dreamer(nn.Module):
             mets = self._expl_behavior.train(start, context, data)[-1]
             metrics.update({"expl_" + key: value for key, value in mets.items()})
         for name, value in metrics.items():
-            if not name in self._metrics.keys():
+            if name not in self._metrics.keys():
                 self._metrics[name] = [value]
             else:
                 self._metrics[name].append(value)

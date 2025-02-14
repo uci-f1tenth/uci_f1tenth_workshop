@@ -1,5 +1,5 @@
 from racecar_gym.envs import gym_api
-from racecar_gym import MultiAgentScenario, SingleAgentScenario
+from racecar_gym import MultiAgentScenario, SingleAgentScenario  # noqa: F401
 
 scenarios = [f"../scenarios/{track}.yml" for track in ["austria", "barcelona"]]
 env = gym_api.ChangingTrackMultiAgentRaceEnv(

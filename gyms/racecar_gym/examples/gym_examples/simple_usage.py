@@ -1,6 +1,6 @@
 from time import sleep
 import gymnasium
-import racecar_gym.envs.gym_api
+import racecar_gym.envs.gym_api  # noqa: F401
 
 # Currently, three rendering modes are available: 'human', 'rgb_array_birds_eye' and 'rgb_array_follow'
 # human: Render the scene in a window.

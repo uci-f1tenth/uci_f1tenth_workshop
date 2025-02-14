@@ -29,7 +29,7 @@ class MultiAgentRaceEnv(gymnasium.Env):
         )
         self._render_mode = render_mode
         self._render_options = render_options or {}
-        if not "agent" in self._render_options:
+        if "agent" not in self._render_options:
             self._render_options["agent"] = next(iter(self._scenario.agents))
         self._time = 0.0
         self.action_space = gymnasium.spaces.Dict(

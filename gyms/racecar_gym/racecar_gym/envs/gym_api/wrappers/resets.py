@@ -1,7 +1,7 @@
 from typing import Any, Optional, Dict, Tuple
 
 import gymnasium
-from gymnasium.core import WrapperObsType, ObsType
+from gymnasium.core import ObsType
 
 
 class FixedResetMode(gymnasium.Wrapper):

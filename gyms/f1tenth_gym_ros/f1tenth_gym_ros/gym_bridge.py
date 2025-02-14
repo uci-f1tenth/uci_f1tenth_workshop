@@ -70,7 +70,7 @@ class GymBridge(Node):
         num_agents = self.get_parameter("num_agent").value
         if num_agents < 1 or num_agents > 2:
             raise ValueError("num_agents should be either 1 or 2.")
-        elif type(num_agents) != int:
+        elif num_agents is not int:
             raise ValueError("num_agents should be an int.")
 
         # env backend

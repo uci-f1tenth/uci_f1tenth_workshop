@@ -802,14 +802,14 @@ def static_scan(fn, inputs, start):
 
         last = fn(last, *inp(index))
         if flag:
-            if type(last) == type({}):
+            if last is dict:
                 outputs = {
                     key: value.clone().unsqueeze(0) for key, value in last.items()
                 }
             else:
                 outputs = []
                 for _last in last:
-                    if type(_last) == type({}):
+                    if _last is dict:
                         outputs.append(
                             {
                                 key: value.clone().unsqueeze(0)
@@ -820,14 +820,14 @@ def static_scan(fn, inputs, start):
                         outputs.append(_last.clone().unsqueeze(0))
             flag = False
         else:
-            if type(last) == type({}):
+            if last is dict:
                 for key in last.keys():
                     outputs[key] = torch.cat(
                         [outputs[key], last[key].unsqueeze(0)], dim=0
                     )
             else:
                 for j in range(len(outputs)):
-                    if type(last[j]) == type({}):
+                    if last[j] is dict:
                         for key in last[j].keys():
                             outputs[j][key] = torch.cat(
                                 [outputs[j][key], last[j][key].unsqueeze(0)], dim=0
@@ -836,7 +836,7 @@ def static_scan(fn, inputs, start):
                         outputs[j] = torch.cat(
                             [outputs[j], last[j].unsqueeze(0)], dim=0
                         )
-    if type(last) == type({}):
+    if last is dict:
         outputs = [outputs]
     return outputs
 

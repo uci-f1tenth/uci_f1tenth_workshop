@@ -1,1 +1,1 @@
-from .providers import load_world, load_vehicle
+from .providers import load_world, load_vehicle  # noqa: F401

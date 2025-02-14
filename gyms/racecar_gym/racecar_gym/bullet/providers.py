@@ -132,8 +132,10 @@ def load_world(spec: WorldSpec, agents: List[Agent]) -> core.World:
             )
             with zipfile.ZipFile(f"{scene_path}/{spec.name}.zip", "r") as zip:
                 zip.extractall(f"{scene_path}/")
-        except:
-            raise NotImplementedError(f"No scene with name {spec.name} implemented.")
+        except Exception as e:
+            raise NotImplementedError(
+                f"No scene with name {spec.name} implemented. Error: {e}"
+            )
 
     config = SceneConfig()
     config.load(config_file)

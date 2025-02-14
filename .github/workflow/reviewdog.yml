@@ -1,0 +1,23 @@
+name: reviewdog
+on: [pull_request]
+jobs:
+  mypy:
+    name: mypy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: tsuyoshicho/action-mypy@v4
+        with:
+          github_token: ${{ secrets.github_token }}
+
+          reporter: github-pr-review
+
+          level: warning
+
+          workdir: src
+  typos:
+    name: typos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: reviewdog/action-typos@v1

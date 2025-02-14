@@ -14,7 +14,8 @@ from torch.nn import functional as F
 from torch import distributions as torchd
 
 
-to_np = lambda x: x.detach().cpu().numpy()
+def to_np(x):
+    return x.detach().cpu().numpy()
 
 
 def symlog(x):
@@ -671,7 +672,8 @@ def static_scan_for_lambda_return(fn, inputs, start):
     flag = True
     for index in indices:
         # (inputs, pcont) -> (inputs[index], pcont[index])
-        inp = lambda x: (_input[x] for _input in inputs)
+        def inp(x):
+            return (_input[x] for _input in inputs)
         last = fn(last, *inp(index))
         if flag:
             outputs = last
@@ -793,7 +795,8 @@ def static_scan(fn, inputs, start):
     indices = range(inputs[0].shape[0])
     flag = True
     for index in indices:
-        inp = lambda x: (_input[x] for _input in inputs)
+        def inp(x):
+            return (_input[x] for _input in inputs)
         last = fn(last, *inp(index))
         if flag:
             if type(last) == type({}):

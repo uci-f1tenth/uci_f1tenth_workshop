@@ -88,7 +88,8 @@ class DreamerRacer(Node):
         else:
             directory = config.evaldir
         eval_eps = tools.load_episodes(directory, limit=1)
-        make = lambda mode, id: self.make_env(config, mode, id)
+        def make(mode, id):
+            return self.make_env(config, mode, id)
         train_envs = [make("train", i) for i in range(config.envs)]
         eval_envs = [make("eval", i) for i in range(config.envs)]
 
@@ -131,7 +132,7 @@ class DreamerRacer(Node):
                 logprob = random_actor.log_prob(action)
                 return {"action": action, "logprob": logprob}, None
 
-            state = tools.simulate(
+            tools.simulate(
                 random_agent,
                 train_envs,
                 train_eps,
@@ -145,7 +146,7 @@ class DreamerRacer(Node):
 
         print("Simulate agent.")
         train_dataset = self.make_dataset(train_eps, config)
-        eval_dataset = self.make_dataset(eval_eps, config)
+        self.make_dataset(eval_eps, config)
         agent = Dreamer(
             train_envs[0].observation_space,
             train_envs[0].action_space,
@@ -164,7 +165,7 @@ class DreamerRacer(Node):
 
     def make_env(self, config, mode, id):
         # port the dreamer environment
-        env = None
+        pass
 
     def make_dataset(self, episodes, config):
         generator = tools.sample_episodes(episodes, config.batch_length)

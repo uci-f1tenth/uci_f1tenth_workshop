@@ -35,7 +35,7 @@ def generate_launch_description():
     )
     config_dict = yaml.safe_load(open(config, "r"))
     has_opp = config_dict["bridge"]["ros__parameters"]["num_agent"] > 1
-    teleop = config_dict["bridge"]["ros__parameters"]["kb_teleop"]
+    config_dict["bridge"]["ros__parameters"]["kb_teleop"]
 
     bridge_node = Node(
         package="f1tenth_gym_ros",

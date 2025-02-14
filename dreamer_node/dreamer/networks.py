@@ -125,7 +125,8 @@ class RSSM(nn.Module):
             raise NotImplementedError(self._initial)
 
     def observe(self, embed, action, is_first, state=None):
-        swap = lambda x: x.permute([1, 0] + list(range(2, len(x.shape))))
+        def swap(x):
+            return x.permute([1, 0] + list(range(2, len(x.shape))))
         # (batch, time, ch) -> (time, batch, ch)
         embed, action, is_first = swap(embed), swap(action), swap(is_first)
         # prev_state[0] means selecting posterior of return(posterior, prior) from obs_step
@@ -143,7 +144,8 @@ class RSSM(nn.Module):
         return post, prior
 
     def imagine_with_action(self, action, state):
-        swap = lambda x: x.permute([1, 0] + list(range(2, len(x.shape))))
+        def swap(x):
+            return x.permute([1, 0] + list(range(2, len(x.shape))))
         assert isinstance(state, dict), state
         action = swap(action)
         prior = tools.static_scan(self.img_step, [action], state)
@@ -173,7 +175,7 @@ class RSSM(nn.Module):
 
     def obs_step(self, prev_state, prev_action, embed, is_first, sample=True):
         # initialize all prev_state
-        if prev_state == None or torch.sum(is_first) == len(is_first):
+        if prev_state is None or torch.sum(is_first) == len(is_first):
             prev_state = self.initial(len(is_first))
             prev_action = torch.zeros(
                 (len(is_first), self._num_actions), device=self._device
@@ -271,8 +273,10 @@ class RSSM(nn.Module):
 
     def kl_loss(self, post, prior, free, dyn_scale, rep_scale):
         kld = torchd.kl.kl_divergence
-        dist = lambda x: self.get_dist(x)
-        sg = lambda x: {k: v.detach() for k, v in x.items()}
+        def dist(x):
+            return self.get_dist(x)
+        def sg(x):
+            return {k: v.detach() for k, v in x.items()}
 
         rep_loss = value = kld(
             dist(post) if self._discrete else dist(post)._dist,

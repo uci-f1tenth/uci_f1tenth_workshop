@@ -80,12 +80,12 @@ class RacerEnv:
 
     def step(self, action, lidar_data, odom_data=None):
         # Denormalize action to physical control values
-        steering = self.denormalize(action[0], self._min_steering, self._max_steering)
-        speed = self.denormalize(action[1], self._min_speed, self._max_speed)
+        self.denormalize(action[0], self._min_steering, self._max_steering)
+        self.denormalize(action[1], self._min_speed, self._max_speed)
         # Use steering and speed for simulation
         lidar_data = np.clip(lidar_data, self.lidar_space.low, self.lidar_space.high)
         observation = {"lidar": lidar_data}
-        if self.include_odom and odom_data != None:
+        if self.include_odom and odom_data is not None:
             observation["odom"] = np.array(odom_data, dtype=np.float32)
 
         # TODO: update reward function
@@ -103,7 +103,7 @@ class RacerEnv:
         lidar_data = np.clip(lidar_data, self.lidar_space.low, self.lidar_space.high)
 
         observation = {"lidar": lidar_data}
-        if self.include_odom and odom_data != None:
+        if self.include_odom and odom_data is not None:
             observation["odom"] = np.array(odom_data, dtype=np.float32)
 
         info = {}

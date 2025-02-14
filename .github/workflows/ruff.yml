@@ -14,13 +14,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/ruff-action@v3
-      - run: ruff check --fix
-      - run: ruff format
-      - name: Commit changes
-        if: github.event_name == 'pull_request'
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git add .
-          git commit -m "Apply automatic formatting changes" || true
-          git push
+      - run: ruff check
+      - run: ruff format --check

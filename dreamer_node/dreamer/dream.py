@@ -47,8 +47,10 @@ class Dreamer(nn.Module):
         ):  # compilation is not supported on windows
             self._wm = torch.compile(self._wm)
             self._task_behavior = torch.compile(self._task_behavior)
+
         def reward(f, s, a):
             return self._wm.heads["reward"](f).mean()
+
         self._expl_behavior = dict(
             greedy=lambda: self._task_behavior,
             random=lambda: expl.Random(config, act_space),
@@ -119,10 +121,10 @@ class Dreamer(nn.Module):
         post, context, mets = self._wm._train(data)
         metrics.update(mets)
         start = post
+
         def reward(f, s, a):
-            return self._wm.heads["reward"](
-                    self._wm.dynamics.get_feat(s)
-                ).mode()
+            return self._wm.heads["reward"](self._wm.dynamics.get_feat(s)).mode()
+
         metrics.update(self._task_behavior._train(start, reward)[-1])
         if self._config.expl_behavior != "greedy":
             mets = self._expl_behavior.train(start, context, data)[-1]
@@ -235,8 +237,10 @@ def main(config):
     else:
         directory = config.evaldir
     eval_eps = tools.load_episodes(directory, limit=1)
+
     def make(mode, id):
         return make_env(config, mode, id)
+
     train_envs = [make("train", i) for i in range(config.envs)]
     eval_envs = [make("eval", i) for i in range(config.envs)]
     if config.parallel:

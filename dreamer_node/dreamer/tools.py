@@ -674,6 +674,7 @@ def static_scan_for_lambda_return(fn, inputs, start):
         # (inputs, pcont) -> (inputs[index], pcont[index])
         def inp(x):
             return (_input[x] for _input in inputs)
+
         last = fn(last, *inp(index))
         if flag:
             outputs = last
@@ -795,8 +796,10 @@ def static_scan(fn, inputs, start):
     indices = range(inputs[0].shape[0])
     flag = True
     for index in indices:
+
         def inp(x):
             return (_input[x] for _input in inputs)
+
         last = fn(last, *inp(index))
         if flag:
             if type(last) == type({}):

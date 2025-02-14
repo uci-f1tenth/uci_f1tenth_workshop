@@ -88,8 +88,10 @@ class DreamerRacer(Node):
         else:
             directory = config.evaldir
         eval_eps = tools.load_episodes(directory, limit=1)
+
         def make(mode, id):
             return self.make_env(config, mode, id)
+
         train_envs = [make("train", i) for i in range(config.envs)]
         eval_envs = [make("eval", i) for i in range(config.envs)]
 

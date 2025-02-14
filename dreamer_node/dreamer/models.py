@@ -5,6 +5,7 @@ from torch import nn
 import networks
 import tools
 
+
 def to_np(x):
     return x.detach().cpu().numpy()
 
@@ -348,8 +349,10 @@ class ImagBehavior(nn.Module):
 
     def _imagine(self, start, policy, horizon):
         dynamics = self._world_model.dynamics
+
         def flatten(x):
             return x.reshape([-1] + list(x.shape[2:]))
+
         start = {k: flatten(v) for k, v in start.items()}
 
         def step(prev, _):

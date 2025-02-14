@@ -127,6 +127,7 @@ class RSSM(nn.Module):
     def observe(self, embed, action, is_first, state=None):
         def swap(x):
             return x.permute([1, 0] + list(range(2, len(x.shape))))
+
         # (batch, time, ch) -> (time, batch, ch)
         embed, action, is_first = swap(embed), swap(action), swap(is_first)
         # prev_state[0] means selecting posterior of return(posterior, prior) from obs_step
@@ -146,6 +147,7 @@ class RSSM(nn.Module):
     def imagine_with_action(self, action, state):
         def swap(x):
             return x.permute([1, 0] + list(range(2, len(x.shape))))
+
         assert isinstance(state, dict), state
         action = swap(action)
         prior = tools.static_scan(self.img_step, [action], state)
@@ -273,8 +275,10 @@ class RSSM(nn.Module):
 
     def kl_loss(self, post, prior, free, dyn_scale, rep_scale):
         kld = torchd.kl.kl_divergence
+
         def dist(x):
             return self.get_dist(x)
+
         def sg(x):
             return {k: v.detach() for k, v in x.items()}
 

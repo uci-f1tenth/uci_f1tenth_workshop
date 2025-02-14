@@ -56,8 +56,10 @@ class Worker:
 
     def __init__(self, fn, strategy="thread", state=False):
         if not state:
+
             def fn(s, *args, fn=fn, **kwargs):
                 return (s, fn(*args, **kwargs))
+
         inits = self.initializers
         self.impl = {
             "process": bind(ProcessPipeWorker, initializers=inits),

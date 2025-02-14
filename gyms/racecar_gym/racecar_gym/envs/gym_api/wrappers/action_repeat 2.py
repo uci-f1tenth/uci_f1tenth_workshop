@@ -5,8 +5,13 @@ import numpy as np
 
 
 class ActionRepeat(gymnasium.Wrapper):
-
-    def __init__(self, env, steps: int, reward_aggregate_fn: Callable[[List], Any], termination_fn: Callable[[Any], bool]):
+    def __init__(
+        self,
+        env,
+        steps: int,
+        reward_aggregate_fn: Callable[[List], Any],
+        termination_fn: Callable[[Any], bool],
+    ):
         super().__init__(env)
         self._reward_aggregate_fn = reward_aggregate_fn
         self._termination_fn = termination_fn
@@ -23,6 +28,7 @@ class ActionRepeat(gymnasium.Wrapper):
         reward = self._reward_aggregate_fn(rewards)
         return obs, reward, terminated, truncated, info
 
+
 def _aggregate_dicts(dicts, initial_value: Any, agg_fn: Callable[[Any, Any], Any]):
     result = dict((key, initial_value) for key in dicts[0].keys())
     for item in dicts:
@@ -32,20 +38,24 @@ def _aggregate_dicts(dicts, initial_value: Any, agg_fn: Callable[[Any, Any], Any
 
 
 def MultiAgentActionRepeat(env, steps: int):
-
     def aggregate(rewards):
         return _aggregate_dicts(dicts=rewards, initial_value=0.0, agg_fn=float.__add__)
 
     def termination(done):
         return any(done.values())
 
-    return ActionRepeat(env=env, steps=steps, reward_aggregate_fn=aggregate, termination_fn=termination)
+    return ActionRepeat(
+        env=env, steps=steps, reward_aggregate_fn=aggregate, termination_fn=termination
+    )
+
 
 def SingleAgentActionRepeat(env, steps: int):
-    return ActionRepeat(env=env, steps=steps, reward_aggregate_fn=sum, termination_fn=lambda done: done)
+    return ActionRepeat(
+        env=env, steps=steps, reward_aggregate_fn=sum, termination_fn=lambda done: done
+    )
+
 
 def VectorizedSingleAgentActionRepeat(env, steps: int):
-
     def aggregate(rewards):
         aggregated_rewards = np.array(rewards)
         return aggregated_rewards.sum(axis=0)
@@ -53,4 +63,6 @@ def VectorizedSingleAgentActionRepeat(env, steps: int):
     def termination(done):
         return all(done)
 
-    return ActionRepeat(env=env, steps=steps, reward_aggregate_fn=aggregate, termination_fn=termination)
+    return ActionRepeat(
+        env=env, steps=steps, reward_aggregate_fn=aggregate, termination_fn=termination
+    )

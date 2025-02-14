@@ -3,8 +3,8 @@ from racecar_gym.envs import gym_api
 
 n_parallel_instances = 2
 rendering = True
-scenarios = ['../scenarios/custom.yml' for _ in range(n_parallel_instances)]
-env = gym_api.VectorizedSingleAgentRaceEnv(scenarios=scenarios, render_mode='human')
+scenarios = ["../scenarios/custom.yml" for _ in range(n_parallel_instances)]
+env = gym_api.VectorizedSingleAgentRaceEnv(scenarios=scenarios, render_mode="human")
 n_agents_per_instance = [len(act.spaces.keys()) for act in env.action_space]
 
 for i in range(3):

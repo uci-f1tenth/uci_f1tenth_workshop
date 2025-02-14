@@ -140,6 +140,7 @@ def make_dataset(episodes, config):
     dataset = tools.from_generator(generator, config.batch_size)
     return dataset
 
+
 def make_env(config, mode, id):
     suite, task = config.task.split("_", 1)
     if suite == "dmc":

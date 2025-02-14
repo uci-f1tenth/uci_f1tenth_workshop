@@ -16,7 +16,9 @@ class MultiAgentStackingWrapper(gymnasium.ObservationWrapper):
 
     def __init__(self, env: gymnasium.Env, horizon: int):
         super().__init__(env)
-        assert isinstance(env.observation_space, gymnasium.spaces.Dict) and isinstance(env.action_space, gymnasium.spaces.Dict)
+        assert isinstance(env.observation_space, gymnasium.spaces.Dict) and isinstance(
+            env.action_space, gymnasium.spaces.Dict
+        )
         self._horizon = horizon
         self._step = 0
         self._history = {}
@@ -32,9 +34,13 @@ class MultiAgentStackingWrapper(gymnasium.ObservationWrapper):
                 if isinstance(space, gymnasium.spaces.Box):
                     low = np.repeat([space.low], horizon, axis=0)
                     high = np.repeat([space.high], horizon, axis=0)
-                    new_obs_space[agent].spaces[obs_key] = gymnasium.spaces.Box(low, high)
+                    new_obs_space[agent].spaces[obs_key] = gymnasium.spaces.Box(
+                        low, high
+                    )
                 else:
-                    raise NotImplementedError('No other spaces are yet implemented for stacking!')
+                    raise NotImplementedError(
+                        "No other spaces are yet implemented for stacking!"
+                    )
 
         self.observation_space = gymnasium.spaces.Dict(new_obs_space)
 
@@ -46,7 +52,9 @@ class MultiAgentStackingWrapper(gymnasium.ObservationWrapper):
             for key, observation in observation_dict.items():
                 self._history[agent][key] = np.zeros_like(observation)
 
-    def reset(self, *, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None) -> Tuple[ObsType, Dict[str, Any]]:
+    def reset(
+        self, *, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None
+    ) -> Tuple[ObsType, Dict[str, Any]]:
         self._reset_history()
         return self.env.reset(seed=seed, options=options)
 
@@ -54,5 +62,7 @@ class MultiAgentStackingWrapper(gymnasium.ObservationWrapper):
         for agent, obs_dict in observation.items():
             for obs_key, obs in obs_dict.items():
                 history = self._history[agent][obs_key]
-                self._history[agent][obs_key] = np.concatenate([history[1:], [obs]], axis=0)
+                self._history[agent][obs_key] = np.concatenate(
+                    [history[1:], [obs]], axis=0
+                )
         return self._history

@@ -10,7 +10,6 @@ from .sensors import Sensor
 
 
 class Vehicle(ABC):
-
     def control(self, commands: Dict) -> None:
         for actuator, command in commands.items():
             self.actuators[actuator].control(command)
@@ -38,7 +37,9 @@ class Vehicle(ABC):
 
     @property
     def action_space(self) -> gymnasium.spaces.Dict:
-        return gymnasium.spaces.Dict(dict((name, actuator.space()) for name, actuator in self.actuators.items()))
+        return gymnasium.spaces.Dict(
+            dict((name, actuator.space()) for name, actuator in self.actuators.items())
+        )
 
     @property
     def observation_space(self) -> gymnasium.spaces.Dict:

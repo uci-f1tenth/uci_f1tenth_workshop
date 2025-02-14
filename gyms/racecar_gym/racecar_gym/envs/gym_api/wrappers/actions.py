@@ -11,15 +11,21 @@ class FlattenActionWrapper(gymnasium.ActionWrapper):
 
     def __init__(self, env: MultiAgentRaceEnv):
         super().__init__(env)
-        self._forward_mappings = dict((key, i) for i, key in enumerate(env.action_space.spaces.keys()))
-        self._reverse_mappings = dict((i, key) for i, key in enumerate(env.action_space.spaces.keys()))
+        self._forward_mappings = dict(
+            (key, i) for i, key in enumerate(env.action_space.spaces.keys())
+        )
+        self._reverse_mappings = dict(
+            (i, key) for i, key in enumerate(env.action_space.spaces.keys())
+        )
         self._build_spaces(base_env=env)
 
     def _build_spaces(self, base_env: gymnasium.Env):
         new_action_space = dict()
         for agent, action_space in base_env.action_space.spaces.items():
             low = np.concatenate([space.low for space in action_space.spaces.values()])
-            high = np.concatenate([space.high for space in action_space.spaces.values()])
+            high = np.concatenate(
+                [space.high for space in action_space.spaces.values()]
+            )
             new_action_space[agent] = gymnasium.spaces.Box(low, high)
         self.action_space = gymnasium.spaces.Dict(new_action_space)
 

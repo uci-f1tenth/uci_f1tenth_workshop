@@ -6,7 +6,6 @@ from racecar_gym.core.definitions import Position
 
 
 class GridMap:
-
     def __init__(self, grid_map: np.ndarray, resolution: float, origin: Position):
         self._resolution = resolution
         self._origin = origin
@@ -38,4 +37,3 @@ class GridMap:
     @property
     def resolution(self):
         return self._resolution
-

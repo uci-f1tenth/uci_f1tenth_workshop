@@ -1,12 +1,16 @@
 import unittest
 import gym
-from racecar_gym import MultiAgentScenario, SingleAgentScenario, MultiAgentRaceEnv, SingleAgentRaceEnv, \
-    VectorizedSingleAgentRaceEnv
+from racecar_gym import (
+    MultiAgentScenario,
+    SingleAgentScenario,
+    MultiAgentRaceEnv,
+    SingleAgentRaceEnv,
+    VectorizedSingleAgentRaceEnv,
+)
 from racecar_gym.envs.gym_api import wrappers
 
 
 class SingleActionRepeatStub(gym.Wrapper):
-
     def __init__(self, env, step_reward=1.0):
         super().__init__(env)
         self.calls = 0
@@ -17,8 +21,8 @@ class SingleActionRepeatStub(gym.Wrapper):
         obs, reward, done, info = self.env.step(action)
         return obs, self._step_reward, done, info
 
-class MultiActionRepeatStub(gym.Wrapper):
 
+class MultiActionRepeatStub(gym.Wrapper):
     def __init__(self, env, step_reward=1.0):
         super().__init__(env)
         self.calls = 0
@@ -30,8 +34,8 @@ class MultiActionRepeatStub(gym.Wrapper):
         reward = dict((k, self._step_reward) for k in reward.keys())
         return obs, reward, done, info
 
-class VectorizedSingleActionRepeatStub(gym.Wrapper):
 
+class VectorizedSingleActionRepeatStub(gym.Wrapper):
     def __init__(self, env, step_reward=1.0):
         super().__init__(env)
         self.calls = 0
@@ -44,10 +48,8 @@ class VectorizedSingleActionRepeatStub(gym.Wrapper):
 
 
 class ActionRepeatTest(unittest.TestCase):
-
     def setUp(self) -> None:
-        self._scenario = './wrappers/scenarios/austria.yml'
-
+        self._scenario = "./wrappers/scenarios/austria.yml"
 
     def test_single_agent_action_repeat(self):
         scenario = SingleAgentScenario.from_spec(path=self._scenario)

@@ -8,7 +8,7 @@ import pybullet
 
 from racecar_gym.core import actuators
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class BulletActuator(actuators.Actuator[T], ABC):
@@ -52,10 +52,11 @@ class Motor(BulletActuator[Tuple[float, float]]):
 
         for index in self.joint_indices:
             pybullet.setJointMotorControl2(
-                self.body_id, index,
+                self.body_id,
+                index,
                 pybullet.VELOCITY_CONTROL,
                 targetVelocity=velocity,
-                force=force
+                force=force,
             )
 
     def space(self) -> gymnasium.Space:
@@ -74,19 +75,22 @@ class Speed(BulletActuator[Tuple[float, float]]):
         self._config = config
 
     def control(self, target_speed: float) -> None:
-        """ target_speed is assumed to be mapped from [0,max_velocity] to [-1, +1]"""
+        """target_speed is assumed to be mapped from [0,max_velocity] to [-1, +1]"""
         target_speed = np.clip(target_speed, -1, +1)  # sanity check
-        target_speed = (target_speed + 1.0) / 2.0 * self._config.max_velocity  # convert to actual range
+        target_speed = (
+            (target_speed + 1.0) / 2.0 * self._config.max_velocity
+        )  # convert to actual range
 
         velocity = target_speed * self._config.velocity_multiplier
         force = self._config.max_force
 
         for index in self.joint_indices:
             pybullet.setJointMotorControl2(
-                self.body_id, index,
+                self.body_id,
+                index,
                 pybullet.VELOCITY_CONTROL,
                 targetVelocity=velocity,
-                force=force
+                force=force,
             )
 
     def space(self) -> gymnasium.Space:
@@ -104,13 +108,12 @@ class SteeringWheel(BulletActuator[float]):
         self._config = config
 
     def control(self, command: float) -> None:
-        angle = command * self._config.max_steering_angle * self._config.steering_multiplier
+        angle = (
+            command * self._config.max_steering_angle * self._config.steering_multiplier
+        )
         for joint in self.joint_indices:
             pybullet.setJointMotorControl2(
-                self.body_id,
-                joint,
-                pybullet.POSITION_CONTROL,
-                targetPosition=-angle
+                self.body_id, joint, pybullet.POSITION_CONTROL, targetPosition=-angle
             )
 
     def space(self) -> gymnasium.Space:

@@ -8,7 +8,6 @@ from racecar_gym.tasks import Task
 
 
 class Agent:
-
     def __init__(self, id: str, vehicle: Vehicle, task: Task):
         self._id = id
         self._vehicle = vehicle

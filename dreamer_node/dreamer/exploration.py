@@ -77,7 +77,7 @@ class Plan2Explore(nn.Module):
             config.model_lr,
             config.opt_eps,
             config.grad_clip,
-            **kw
+            **kw,
         )
 
     def train(self, start, context, data):

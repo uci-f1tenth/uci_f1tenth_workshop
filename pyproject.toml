@@ -6,10 +6,12 @@ requires-python = ">=3.13"
 dependencies = [
     "racecar-gym",
     "gymnasium>=1.0.0",
+    "dreamer-node",
 ]
 
 [tool.uv.sources]
 racecar-gym = { workspace = true }
+dreamer-node = { workspace = true }
 
 [tool.uv.workspace]
 members = ["gyms/racecar_gym", "dreamer_node"]

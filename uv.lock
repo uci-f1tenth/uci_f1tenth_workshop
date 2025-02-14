@@ -49,6 +49,9 @@ requires-dist = [
     { name = "torch", specifier = ">=2.6.0" },
 ]
 
+[package.metadata.requires-dev]
+dev = []
+
 [[package]]
 name = "farama-notifications"
 version = "0.0.4"
@@ -554,6 +557,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "gymnasium" },
+    { name = "dreamer-node" },
     { name = "racecar-gym" },
 ]
 
@@ -566,6 +570,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "gymnasium", specifier = ">=1.0.0" },
+    { name = "dreamer-node", editable = "dreamer_node" },
     { name = "racecar-gym", editable = "gyms/racecar_gym" },
 ]
 

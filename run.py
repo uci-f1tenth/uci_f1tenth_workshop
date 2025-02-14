@@ -1,5 +1,5 @@
 import gymnasium
-import racecar_gym.envs.gym_api
+import racecar_gym.envs.gym_api  # noqa: F401
 
 env = gymnasium.make(
     id='SingleAgentAustria-v0',

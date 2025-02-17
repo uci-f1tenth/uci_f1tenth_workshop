@@ -2,17 +2,21 @@
 
 This repository is intended for academic and research purposes at the University of California, Irvine. All contributions must adhere to applicable copyright laws, licensing agreements, and UCI’s academic integrity policies. Unauthorized use, distribution, or modification of this code in violation of these guidelines is strictly prohibited. By contributing, you agree to respect the intellectual property of others and ensure your work complies with academic use standards.
 
+---
+
 ## Setup Instructions for Racecar Gym Environment(Recommended).
 
-To use the Racercar Gym Environment, you must download (uv)[https://docs.astral.sh/uv/getting-started/installation/].
+To use the Racercar Gym Environment, you must download [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
-After installation, you can troubleshoot using the (uv documentation)[https://docs.astral.sh/uv/#projects].
+After installation, you can troubleshoot using the [uv documentation](https://docs.astral.sh/uv/#projects).
 
 To run the code use:
 
 ```bash
 uv run run.py
 ```
+
+---
 
 ## Setup Instructions for ROS gym environment(Optional).
 
@@ -55,7 +59,7 @@ Launch the simulation
 ros2 launch f1tenth_gym_ros gym_bridge_launch.py
 ```
 
-## Building a node
+### Building a node
 
 After you run the above scrips, your terminal would be busy running the gym_bridge_launch.py. Hence, pull up a new terminal window and go to the project directory BEFORE you run the below commands.
 
@@ -91,7 +95,7 @@ Run the node with the executable
 ros2 run your_package your_executable
 ```
 
-## Example execution of the dreamer node
+### Example execution of the dreamer node
 
 After you run the above scrips, your terminal would be busy running the gym_bridge_launch.py. Hence, pull up a new terminal window and go to the project directory BEFORE you run the below commands.
 

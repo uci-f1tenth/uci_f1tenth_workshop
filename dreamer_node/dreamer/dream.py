@@ -344,15 +344,19 @@ def main(config):
         except Exception:
             pass
 
-
 if __name__ == "__main__":
+    from dreamer_node.util.constants import Config  # import path
+
+    
     parser = argparse.ArgumentParser()
     parser.add_argument("--configs", nargs="+")
     args, remaining = parser.parse_known_args()
     configs = yaml.safe_load(
         # TODO: edit this output
         (pathlib.Path(sys.argv[0]).parent / "configs.yaml").read_text()
-    )
+    )   #  Load YAML configurations
+    config = Config()     # Instantiate the default Config object
+
 
     def recursive_update(base, update):
         for key, value in update.items():
@@ -360,13 +364,19 @@ if __name__ == "__main__":
                 recursive_update(base[key], value)
             else:
                 base[key] = value
+#  Apply YAML updates to the Config object
+name_list = ["defaults", *args.configs] if args.configs else ["defaults"]
+for name in name_list:
+    if name in configs:  # Ensure the key exists in YAML before applying updates
+        recursive_update(vars(config), configs[name])
 
-    name_list = ["defaults", *args.configs] if args.configs else ["defaults"]
-    defaults = {}
-    for name in name_list:
-        recursive_update(defaults, configs[name])
+
+#  Parse command-line arguments and override Config values if needed
     parser = argparse.ArgumentParser()
-    for key, value in sorted(defaults.items(), key=lambda x: x[0]):
+    for key, value in sorted(vars(config).items(), key=lambda x: x[0]):  # Use vars(config) to access attributes
         arg_type = tools.args_type(value)
-        parser.add_argument(f"--{key}", type=arg_type, default=arg_type(value))
-    main(parser.parse_args(remaining))
+        parser.add_argument(f"--{key}", type=arg_type, default=value)
+    
+    # Parse remaining arguments and run main with the updated config
+    config = parser.parse_args(remaining)  # This ensures CLI args take precedence
+    main(config)

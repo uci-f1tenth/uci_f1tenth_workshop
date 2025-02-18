@@ -36,7 +36,7 @@ class DreamerRacer(Node):
 
         # observations
         self.observations = dict()
-        
+
         # initialize cv_bridge
         self.bridge = CvBridge()
 
@@ -52,11 +52,11 @@ class DreamerRacer(Node):
         self.sub_scan = self.create_subscription(
             LaserScan, self.const.LIDAR_TOPIC, self.scan_callback, 10
         )
-        
+
         self.sub_rgb = self.create_subscription(
             Image, "/camera/color/image_raw", self.rgb_callback, 10
         )
-        
+
         self.sub_depth = self.create_subscription(
             Image, "/camera/aligned_depth_to_color/image_raw", self.depth_callback, 10
         )
@@ -216,7 +216,7 @@ class DreamerRacer(Node):
         # TODO: Set steering and speed variables
         drive_msg = self._convert_action(steering, speed)
         self.pub_drive.publish(drive_msg)
-        
+
     def rgb_callback(self, img_msg: Image):
         """
         Processes incoming RGB image messages from the camera sensor.
@@ -228,16 +228,16 @@ class DreamerRacer(Node):
             None.  The function processes the RGB image directly.
         """
         try:
-            rgb_image = self.bridge.imgmsg_to_cv2(img_msg, desired_encoding = "bgr8")
+            rgb_image = self.bridge.imgmsg_to_cv2(img_msg, desired_encoding="bgr8")
         except CvBridgeError as e:
             self.get_logger().error(f"CvBridge Error: {e}")
             return
-        
+
         resized_rgb = cv2.resize(rgb_image, (224, 224))
         processed_rgb = resized_rgb / 255.0
-        
+
         self.observations["rgb"] = processed_rgb
-        
+
     def depth_callback(self, img_msg: Image):
         """
         Processes incoming depth image messages from the camera sensor.
@@ -249,20 +249,19 @@ class DreamerRacer(Node):
             None.  The function processes the depth image directly.
         """
         try:
-            depth_image = self.bridge.imgmsg_to_cv2(img_msg, desired_encoding = "16UC1")
+            depth_image = self.bridge.imgmsg_to_cv2(img_msg, desired_encoding="16UC1")
         except CvBridgeError as e:
             self.get_logger().error(f"CvBridge Error: {e}")
             return
-        
+
         depth_image = depth_image.astype(np.float32)
         depth_meter = depth_image * 0.001
         depth_clipped = np.clip(depth_meter, 0, 30.0)
         normalized_depth = depth_clipped / 30.0
         resized_depth = cv2.resize(normalized_depth, (224, 224))
-        processed_depth = np.expand_dims(resized_depth, axis = -1)
-        
-        self.observations["depth"] = processed_depth
+        processed_depth = np.expand_dims(resized_depth, axis=-1)
 
+        self.observations["depth"] = processed_depth
 
     def lidar_postproccess(self, lidar_data: LaserScan):
         """

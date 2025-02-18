@@ -31,19 +31,19 @@ class RacerEnv:
         """
         self.include_odom = include_odom
         self.include_camera = include_camera
-        
+
         self.lidar_space = gym.spaces.Box(
             low=np.array([self.min_lidar] * self.num_lidar, dtype=np.float32),
             high=np.array([self.max_lidar] * self.num_lidar, dtype=np.float32),
             shape=(self.num_lidar,),
             dtype=np.float32,
         )
-        
+
         if self.include_camera:
             self.depth_space = gym.spaces.Box(
-                low=0.0, high = 1.0, shape=self.depth_shape, dtype=np.float32
+                low=0.0, high=1.0, shape=self.depth_shape, dtype=np.float32
             )
-            
+
             self.rgb_space = gym.spaces.Box(
                 low=0.0, high=1.0, shape=self.rgb_shape, dtype=np.float32
             )
@@ -113,7 +113,7 @@ class RacerEnv:
                 observation["rgb"] = np.zeros(self.rgb_shape, dtype=np.float32)
             else:
                 observation["rgb"] = rgb_data
-        
+
         # TODO: update reward function
         reward = None
         done = False
@@ -121,8 +121,16 @@ class RacerEnv:
 
         return observation, reward, done, info
 
-    def reset(self, seed=None, options=None, lidar_data=None, odom_data=None, depth_data=None, rgb_data=None):
-        
+    def reset(
+        self,
+        seed=None,
+        options=None,
+        lidar_data=None,
+        odom_data=None,
+        depth_data=None,
+        rgb_data=None,
+    ):
+
         super().reset(seed=seed)
         if lidar_data is None:
             raise ValueError("Reset: LiDAR data does not exist")
@@ -141,6 +149,6 @@ class RacerEnv:
                 observation["rgb"] = np.zeros(self.rgb_shape, dtype=np.float32)
             else:
                 observation["rgb"] = rgb_data
-        
+
         info = {}
         return observation, info

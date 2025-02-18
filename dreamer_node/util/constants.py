@@ -23,6 +23,16 @@ class Constants:
         self.max_steering = 0.418
         self.min_speed = 1.5
         self.max_speed = 19.67
+        
+        # observation space
+        self.min_lidar = 0.021
+        self.max_lidar = 30.0
+        self.num_lidar = 1080
+        
+        self.depth_shape = (224, 224, 1)
+        self.rgb_shape = (224, 224, 3)
+        
+        
 
 
 class Config:

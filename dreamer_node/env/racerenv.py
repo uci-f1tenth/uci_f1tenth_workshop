@@ -21,18 +21,32 @@ class RacerEnv:
         self._min_speed = constants.min_speed
         self._max_speed = constants.max_speed
 
+        self.depth_shape = constants.depth_shape
+        self.rgb_shape = constants.rgb_shape
+
     @property
-    def observation_space(self, include_odom=False):
+    def observation_space(self, include_odom=False, include_camera=True):
         """
         returns a dictionary containing LiDAR data & odomoetry data (optional)
         """
         self.include_odom = include_odom
+        self.include_camera = include_camera
+        
         self.lidar_space = gym.spaces.Box(
             low=np.array([self.min_lidar] * self.num_lidar, dtype=np.float32),
             high=np.array([self.max_lidar] * self.num_lidar, dtype=np.float32),
             shape=(self.num_lidar,),
             dtype=np.float32,
         )
+        
+        if self.include_camera:
+            self.deoth_space = gym.spaces.Box(
+                low=0.0, high = 1.0, shape=self.depth_shape, dtype=np.float32
+            )
+            
+            self.rgb_space = gym.spaces.Box(
+                low=0.0, high=1.0, shape=self.rgb_shape, dtype=np.float32
+            )
 
         # odom data: [x, y, z, linear_velocity, angular_velocity]
         if self.include_odom:
@@ -45,6 +59,9 @@ class RacerEnv:
         spaces = {"lidar": self.lidar_space}
         if self.include_odom:
             spaces["odom"] = self.odom_space
+        if self.include_camera:
+            spaces["depth"] = self.depth
+            spaces["rgb"] = self.rgb_space
 
         return gym.spaces.Dict(spaces)
 
@@ -78,7 +95,7 @@ class RacerEnv:
             dtype=np.float32,
         )
 
-    def step(self, action, lidar_data, odom_data=None):
+    def step(self, action, lidar_data, odom_data=None, depth_data=None, rgb_data=None):
         # Denormalize action to physical control values
         self.denormalize(action[0], self._min_steering, self._max_steering)
         self.denormalize(action[1], self._min_speed, self._max_speed)
@@ -87,7 +104,16 @@ class RacerEnv:
         observation = {"lidar": lidar_data}
         if self.include_odom and odom_data is not None:
             observation["odom"] = np.array(odom_data, dtype=np.float32)
-
+        if self.include_camera:
+            if depth_data is None:
+                observation["depth"] = np.zeros(self.depth_shape, dtype=np.float32)
+            else:
+                observation["depth"] = depth_data
+            if rgb_data is None:
+                observation["rgb"] = np.zeros(self.rgb_shape, dtype=np.float32)
+            else:
+                observation["rgb"] = rgb_data
+        
         # TODO: update reward function
         reward = None
         done = False
@@ -95,7 +121,8 @@ class RacerEnv:
 
         return observation, reward, done, info
 
-    def reset(self, seed=None, options=None, lidar_data=None, odom_data=None):
+    def reset(self, seed=None, options=None, lidar_data=None, odom_data=None, depth_data=None, rgb_data=None):
+        
         super().reset(seed=seed)
         if lidar_data is None:
             raise ValueError("Reset: LiDAR data does not exist")
@@ -105,6 +132,15 @@ class RacerEnv:
         observation = {"lidar": lidar_data}
         if self.include_odom and odom_data is not None:
             observation["odom"] = np.array(odom_data, dtype=np.float32)
-
+        if self.include_camera:
+            if depth_data is None:
+                observation["depth"] = np.zeros(self.depth_shape, dtype=np.float32)
+            else:
+                observation["depth"] = depth_data
+            if rgb_data is None:
+                observation["rgb"] = np.zeros(self.rgb_shape, dtype=np.float32)
+            else:
+                observation["rgb"] = rgb_data
+        
         info = {}
         return observation, info

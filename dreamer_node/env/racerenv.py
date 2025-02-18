@@ -1,5 +1,5 @@
-import numpy as np
 import gymnasium as gym
+import numpy as np
 
 from util.constants import Constants
 
@@ -130,7 +130,6 @@ class RacerEnv:
         depth_data=None,
         rgb_data=None,
     ):
-
         super().reset(seed=seed)
         if lidar_data is None:
             raise ValueError("Reset: LiDAR data does not exist")

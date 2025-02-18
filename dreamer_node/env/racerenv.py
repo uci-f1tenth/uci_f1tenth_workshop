@@ -40,7 +40,7 @@ class RacerEnv:
         )
         
         if self.include_camera:
-            self.deoth_space = gym.spaces.Box(
+            self.depth_space = gym.spaces.Box(
                 low=0.0, high = 1.0, shape=self.depth_shape, dtype=np.float32
             )
             
@@ -60,7 +60,7 @@ class RacerEnv:
         if self.include_odom:
             spaces["odom"] = self.odom_space
         if self.include_camera:
-            spaces["depth"] = self.depth
+            spaces["depth"] = self.depth_space
             spaces["rgb"] = self.rgb_space
 
         return gym.spaces.Dict(spaces)

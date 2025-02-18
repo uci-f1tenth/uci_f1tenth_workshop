@@ -53,8 +53,12 @@ class DreamerRacer(Node):
             LaserScan, self.const.LIDAR_TOPIC, self.scan_callback, 10
         )
         
+        self.sub_rgb = self.create_subscription(
+            Image, "/camera/color/image_raw", self.rgb_callback, 10
+        )
+        
         self.sub_depth = self.create_subscription(
-            Image, "/camera/camera/color/image_raw", self.depth_callback, 10
+            Image, "/camera/aligned_depth_to_color/image_raw", self.depth_callback, 10
         )
 
         self.pub_drive = self.create_publisher(
@@ -213,20 +217,41 @@ class DreamerRacer(Node):
         drive_msg = self._convert_action(steering, speed)
         self.pub_drive.publish(drive_msg)
         
-    def depth_callback(self, scan_msg: Image):
+    def rgb_callback(self, img_msg: Image):
+        """
+        Processes incoming RGB image messages from the camera sensor.
+
+        Args:
+            img_msg: A Image message containing the RGB image.
+
+        Returns:
+            None.  The function processes the RGB image directly.
+        """
+        try:
+            rgb_image = self.bridge.imgmsg_to_cv2(img_msg, desired_encoding = "bgr8")
+        except CvBridgeError as e:
+            self.get_logger().error(f"CvBridge Error: {e}")
+            return
+        
+        resized_rgb = cv2.resize(rgb_image, (224, 224))
+        processed_rgb = resized_rgb / 255.0
+        
+        self.observations["rgb"] = processed_rgb
+        
+    def depth_callback(self, img_msg: Image):
         """
         Processes incoming depth image messages from the camera sensor.
 
         Args:
-            scan_msg: A Image message containing the depth image.
+            img_msg: A Image message containing the depth image.
 
         Returns:
             None.  The function processes the depth image directly.
         """
         try:
-            depth_image = self.bridge.imgmsg_to_cv2(scan_msg, desired_enncoding = "16UC1")
+            depth_image = self.bridge.imgmsg_to_cv2(img_msg, desired_encoding = "16UC1")
         except CvBridgeError as e:
-            self.get_logger().error("CvBridge Error: {e}")
+            self.get_logger().error(f"CvBridge Error: {e}")
             return
         
         depth_image = depth_image.astype(np.float32)
@@ -238,7 +263,6 @@ class DreamerRacer(Node):
         
         self.observations["depth"] = processed_depth
 
-        
 
     def lidar_postproccess(self, lidar_data: LaserScan):
         """

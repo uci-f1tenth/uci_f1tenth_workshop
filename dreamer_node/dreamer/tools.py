@@ -149,8 +149,7 @@ def simulate(
         if done.any():
             indices = [index for index, d in enumerate(done) if d]
             results = [envs[i].reset() for i in indices]
-            results = [r() for r in results]
-            for index, result in zip(indices, results):
+            for index, (result, _) in zip(indices, results):
                 t = result.copy()
                 t = {k: convert(v) for k, v in t.items()}
                 # action will be added to transition in add_to_cache

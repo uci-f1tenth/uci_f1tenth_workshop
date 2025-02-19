@@ -27,11 +27,11 @@ class Constants:
 
 class Config:
     def __init__(self):
-        self.logdir = Path("/dreamer/resource/log")
-        self.traindir = Path("/dreamer/resource/train")
-        self.evaldir = Path("/dreamer/resource/eval")
-        self.offline_traindir = "/dreamer/resource/train"
-        self.offline_evaldir = "/dreamer/resource/eval"
+        self.logdir = None #Path("/dreamer/resource/log")
+        self.traindir = None#Path("/dreamer/resource/train")
+        self.evaldir = None#Path("/dreamer/resource/eval")
+        self.offline_traindir = ''#"/dreamer/resource/train"
+        self.offline_evaldir = ''#"/dreamer/resource/eval"
         self.seed = 0
         self.deterministic_run = False
         self.steps = int(1e6)  # Updated from f1tenth

@@ -7,6 +7,8 @@ import sys
 import numpy as np
 import ruamel.yaml as yaml
 
+import gymnasium
+
 sys.path.append(str(pathlib.Path(__file__).parent))
 
 import dreamer.exploration as expl
@@ -165,20 +167,12 @@ def main(config):
     config.evaldir.mkdir(parents=True, exist_ok=True)
     step = count_steps(config.traindir)
     logger = tools.Logger(logdir, config.action_repeat * step)
-
-    # Environment creation (F1Tenth placeholder)
-    def make_env(mode, id):
-        '''F1Tenth environment placeholder'''
-        #! IMPLEMENT THIS WITH YOUR ENVIRONMENT
-        return wrappers.TimeLimit(
-            F1TenthEnv(sensors=['lidar']),  # Your class
-            config.time_limit
-        )
     
     # Environment initialization
     print("Creating F1Tenth environments")
-    train_envs = [make_env("train", i) for i in range(config.envs)]
-    eval_envs = [make_env("eval", i) for i in range(config.envs)]
+    train_envs = [gymnasium.make(id="SingleAgentAustria-v0", render_mode="human") for _ in range(config.envs)]
+    eval_envs = [gymnasium.make(id="SingleAgentAustria-v0", render_mode="human") for _ in range(config.envs)]
+    #! train and eval envs set to the same track for now
     
     # Parallel processing setup (unchanged)
     if config.parallel:
@@ -273,22 +267,6 @@ def main(config):
         try: env.close()
         except: pass
     return logdir
-
-class F1TenthEnv: #! PLACEHOLDER CLASS FOR MAKING TRAINING ENV
-    """IMPLEMENT THIS CLASS"""
-    def __init__(self, sensors):
-        self.observation_space = gym.spaces.Box(-np.inf, np.inf, (1080,))
-        self.action_space = gym.spaces.Box(-1.0, 1.0, (2,))
-        
-    def reset(self):
-        return {'lidar': np.random.randn(1080), 'is_first': True}
-    
-    def step(self, action):
-        obs = {'lidar': np.random.randn(1080), 'is_first': False}
-        return obs, 0.0, False, {}
-    
-    def close(self):
-        pass
 
 if __name__ == "__main__":
     config = Config()

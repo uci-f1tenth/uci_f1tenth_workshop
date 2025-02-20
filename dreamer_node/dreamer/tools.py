@@ -149,6 +149,7 @@ def simulate(
         if done.any():
             indices = [index for index, d in enumerate(done) if d]
             results = [envs[i].reset() for i in indices]
+            results = [r() for r in results]
             for index, (result, _) in zip(indices, results):
                 t = result.copy()
                 t = {k: convert(v) for k, v in t.items()}
@@ -156,7 +157,7 @@ def simulate(
                 t["reward"] = 0.0
                 t["discount"] = 1.0
                 # initial state should be added to cache
-                add_to_cache(cache, envs[index].id, t)
+                add_to_cache(cache, index, t)
                 # replace obs with done by initial state
                 obs[index] = result
         # step agents
@@ -182,8 +183,8 @@ def simulate(
         step += len(envs)
         length *= 1 - done
         # add to cache
-        for a, result, env in zip(action, results, envs):
-            o, r, d, info = result
+        for index, (a, result, env) in enumerate(zip(action, results, envs)):
+            o, r, d, _, info = result
             o = {k: convert(v) for k, v in o.items()}
             transition = o.copy()
             if isinstance(a, dict):
@@ -192,7 +193,7 @@ def simulate(
                 transition["action"] = a
             transition["reward"] = r
             transition["discount"] = info.get("discount", np.array(1 - float(d)))
-            add_to_cache(cache, env.id, transition)
+            add_to_cache(cache, index, transition)
 
         if done.any():
             indices = [index for index, d in enumerate(done) if d]

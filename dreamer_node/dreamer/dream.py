@@ -5,24 +5,25 @@ import pathlib
 import sys
 
 import numpy as np
-import ruamel.yaml as yaml
 
 import gymnasium
+import racecar_gym.envs.gym_api
 
 sys.path.append(str(pathlib.Path(__file__).parent))
 
-import dreamer.exploration as expl
-import dreamer.models as models
-import dreamer.tools as tools
-import dreamer.wrappers as wrappers
-from dreamer.parallel import Parallel, Damy
+import exploration as expl
+import models as models
+import tools as tools
+from parallel import Parallel, Damy
 
 import torch
 from torch import nn
 from torch import distributions as torchd
 
-import gym
-from util.constants import Config
+dreamer_path = pathlib.Path(__file__).parent
+util_path = dreamer_path.parent / "util"
+sys.path.append(str(util_path))
+from constants import Config
 
 
 to_np = lambda x: x.detach().cpu().numpy()
@@ -170,8 +171,8 @@ def main(config):
     
     # Environment initialization
     print("Creating F1Tenth environments")
-    train_envs = [gymnasium.make(id="SingleAgentAustria-v0", render_mode="human") for _ in range(config.envs)]
-    eval_envs = [gymnasium.make(id="SingleAgentAustria-v0", render_mode="human") for _ in range(config.envs)]
+    train_envs = [gymnasium.make(id="SingleAgentAustria-v0", render_mode='rgb_array_follow') for _ in range(config.envs)]
+    eval_envs = [gymnasium.make(id="SingleAgentAustria-v0", render_mode='rgb_array_follow') for _ in range(config.envs)]
     #! train and eval envs set to the same track for now
     
     # Parallel processing setup (unchanged)
@@ -184,8 +185,6 @@ def main(config):
 
     # Action space setup (continuous specific)
     acts = train_envs[0].action_space
-    print(f"Action space: {acts}")
-    config.num_actions = acts.shape[0]  # Continuous action dim
 
     # Dataset initialization (unchanged core)
     train_eps = tools.load_episodes(config.traindir, limit=config.dataset_size)
@@ -196,14 +195,27 @@ def main(config):
     if not config.offline_traindir:
         prefill = max(0, config.prefill - count_steps(config.traindir))
         print(f"Prefill dataset ({prefill} steps)")
+        # Extract low/high for each action component in the Dict space
+        action_lows = []
+        action_highs = []
+        for key in acts.spaces:
+            action_lows.append(torch.tensor(acts[key].low))
+            action_highs.append(torch.tensor(acts[key].high))
+
+        # Concatenate lows/highs across action components
+        action_low = torch.cat(action_lows).repeat(config.envs, 1)
+        action_high = torch.cat(action_highs).repeat(config.envs, 1)
+
         random_actor = torchd.independent.Independent(
-            torchd.uniform.Uniform(
-                torch.tensor(acts.low).repeat(config.envs, 1),
-                torch.tensor(acts.high).repeat(config.envs, 1),
-            ), 1
+            torchd.uniform.Uniform(action_low, action_high), 1
         )
+
+        # In the simulation lambda, return a dictionary with action keys
         state = tools.simulate(
-            lambda o, d, s: ({"action": random_actor.sample()}, None),
+            lambda o, d, s: ({
+                "motor": random_actor.sample()[..., :1],       # Shape (envs, 1)
+                "steering": random_actor.sample()[..., 1:]     # Shape (envs, 1)
+            }, None),
             train_envs, train_eps, config.traindir, logger,
             limit=config.dataset_size, steps=prefill
         )

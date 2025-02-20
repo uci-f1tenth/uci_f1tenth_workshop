@@ -185,6 +185,8 @@ def main(config):
 
     # Action space setup (continuous specific)
     acts = train_envs[0].action_space
+    print("Action Space", acts)
+    config.num_actions = len(acts)
 
     # Dataset initialization (unchanged core)
     train_eps = tools.load_episodes(config.traindir, limit=config.dataset_size)

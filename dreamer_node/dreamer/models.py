@@ -174,6 +174,8 @@ class WorldModel(nn.Module):
 
     # this function is called during both rollout and training
     def preprocess(self, obs):
+        print("---------------------")
+        print(obs)
         obs = {
             k: torch.tensor(v, device=self._config.device, dtype=torch.float32)
             for k, v in obs.items()

@@ -6,8 +6,7 @@ import sys
 
 import numpy as np
 
-import gymnasium
-import racecar_gym.envs.gym_api
+from racecar_env import Racecar
 
 sys.path.append(str(pathlib.Path(__file__).parent))
 
@@ -171,8 +170,8 @@ def main(config):
     
     # Environment initialization
     print("Creating F1Tenth environments")
-    train_envs = [gymnasium.make(id="SingleAgentAustria-v0", render_mode='rgb_array_follow') for _ in range(config.envs)]
-    eval_envs = [gymnasium.make(id="SingleAgentAustria-v0", render_mode='rgb_array_follow') for _ in range(config.envs)]
+    train_envs = [Racecar() for _ in range(config.envs)]
+    eval_envs = [Racecar() for _ in range(config.envs)]
     #! train and eval envs set to the same track for now
     
     # Parallel processing setup (unchanged)

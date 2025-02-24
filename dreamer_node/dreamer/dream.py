@@ -98,6 +98,18 @@ class Dreamer(nn.Module):
             
         obs = self._wm.preprocess(obs)
         embed = self._wm.encoder(obs)  # MLP encoder only
+        print("----------")
+        print("latent")
+        print(latent)
+        print("----------")
+        print("action")
+        print(action)
+        print("----------")
+        print("embed")
+        print(embed)
+        print("----------")
+        print("is_first")
+        print(obs["is_first"])
         latent, _ = self._wm.dynamics.obs_step(latent, action, embed, obs["is_first"])
         
         if self._config.eval_state_mean:

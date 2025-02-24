@@ -1,31 +1,27 @@
-import argparse
-import functools
 import os
-import pathlib
 import sys
+import pathlib
+import functools
 
 import numpy as np
-
 from racecar_env import Racecar
-
-sys.path.append(str(pathlib.Path(__file__).parent))
-
-import exploration as expl
-import models as models
-import tools as tools
-from parallel import Parallel, Damy
 
 import torch
 from torch import nn
 from torch import distributions as torchd
 
-dreamer_path = pathlib.Path(__file__).parent
-util_path = dreamer_path.parent / "util"
-sys.path.append(str(util_path))
-from constants import Config
+import tools
+import models
+import exploration as expl
+from parallel import Parallel, Damy
+
+sys.path.append(str(pathlib.Path(__file__).parent.parent))
+
+from util.constants import Config
 
 
-to_np = lambda x: x.detach().cpu().numpy()
+def to_np(x):
+    return x.detach().cpu().numpy()
 
 
 class Dreamer(nn.Module):
@@ -56,7 +52,9 @@ class Dreamer(nn.Module):
             self._task_behavior = torch.compile(self._task_behavior)
             
         # Exploration (plan2explore recommended)
-        reward = lambda f, s, a: self._wm.heads["reward"](f).mean()
+        def reward(f, s, a):
+            return self._wm.heads["reward"](f).mean()
+
         self._expl_behavior = {
             'greedy': lambda: self._task_behavior,
             'random': lambda: expl.Random(config, act_space),
@@ -65,18 +63,22 @@ class Dreamer(nn.Module):
 
     def __call__(self, obs, reset, state=None, training=True):
         step = self._step
+
         if training:
             # Training logic (unchanged core)
             steps = self._config.pretrain if self._should_pretrain() else self._should_train(step)
+
             for _ in range(steps):
                 self._train(next(self._dataset))
                 self._update_count += 1
                 self._metrics["update_count"] = self._update_count
+
             if self._should_log(step):
                 # Removed video logging
                 for name, values in self._metrics.items():
                     self._logger.scalar(name, float(np.mean(values)))
                     self._metrics[name] = []
+
                 self._logger.write(fps=True)
 
         # Policy execution (continuous actions only)
@@ -84,6 +86,7 @@ class Dreamer(nn.Module):
         if training:
             self._step += len(reset)
             self._logger.step = self._config.action_repeat * self._step
+
         return policy_output, state
 
     def _policy(self, obs, state, training):
@@ -106,9 +109,11 @@ class Dreamer(nn.Module):
         if not training:
             actor = self._task_behavior.actor(feat)
             action = actor.mode()
+
         elif self._should_expl(self._step):
             actor = self._expl_behavior.actor(feat)
             action = actor.sample()
+
         else:
             actor = self._task_behavior.actor(feat)
             action = actor.sample()
@@ -128,12 +133,16 @@ class Dreamer(nn.Module):
         post, context, mets = self._wm._train(data)
         metrics.update(mets)
         start = post
-        reward = lambda f, s, a: self._wm.heads["reward"](
-            self._wm.dynamics.get_feat(s)).mode()
+
+        def reward(f, s, a):
+            return self._wm.heads["reward"](self._wm.dynamics.get_feat(s)).mode()
+
         metrics.update(self._task_behavior._train(start, reward)[-1])
+
         if self._config.expl_behavior != "greedy":
             mets = self._expl_behavior.train(start, context, data)[-1]
             metrics.update({"expl_" + key: value for key, value in mets.items()})
+
         for name, value in metrics.items():
             self._metrics.setdefault(name, []).append(value)
 
@@ -151,8 +160,10 @@ def make_dataset(episodes, config):
 def main(config):
     # Initialization (unchanged core)
     tools.set_seed_everywhere(config.seed)
+
     if config.deterministic_run:
         tools.enable_deterministic_run()
+
     logdir = pathlib.Path(config.logdir).expanduser()
     config.traindir = config.traindir or logdir / "train_eps"
     config.evaldir = config.evaldir or logdir / "eval_eps"
@@ -178,6 +189,7 @@ def main(config):
     if config.parallel:
         train_envs = [Parallel(env, "process") for env in train_envs]
         eval_envs = [Parallel(env, "process") for env in eval_envs]
+
     else:
         train_envs = [Damy(env) for env in train_envs]
         eval_envs = [Damy(env) for env in eval_envs]
@@ -225,6 +237,7 @@ def main(config):
     print("Initializing Dreamer agent")
     train_dataset = make_dataset(train_eps, config)
     eval_dataset = make_dataset(eval_eps, config)
+
     agent = Dreamer(
         train_envs[0].observation_space,
         train_envs[0].action_space,
@@ -258,6 +271,7 @@ def main(config):
             
         # Training phase
         print("Training step")
+
         state = tools.simulate(
             agent,
             train_envs,

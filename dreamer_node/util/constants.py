@@ -68,7 +68,7 @@ class Config:
         # Encoder configuration (updated from f1tenth)
         self.encoder = {
             "mlp_keys": "pose|velocity|acceleration|lidar",  # Process these with MLP
-            "cnn_keys": "image",  # Process this with CNN
+            "cnn_keys": "$^",  # Process this with CNN
             "act": "SiLU",
             "norm": True,
             "cnn_depth": 32,
@@ -82,7 +82,7 @@ class Config:
         # Decoder configuration (updated from f1tenth)
         self.decoder = {
             "mlp_keys": "pose|velocity|acceleration|lidar",  # Decode these with MLP
-            "cnn_keys": "image",  # Decode this with CNN
+            "cnn_keys": "$^",  # Decode this with CNN
             "act": "SiLU",
             "norm": True,
             "cnn_depth": 32,

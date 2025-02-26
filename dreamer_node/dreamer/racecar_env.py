@@ -6,13 +6,21 @@ import numpy as np
 class Racecar:
     metadata = {}
 
-    def __init__(self):
-        self._env = gymnasium.make(
-            id='SingleAgentRaceEnv-v0', 
-            scenario='gyms/racecar_gym/scenarios/austria.yml',
-            render_mode='rgb_array_follow', # optional
-            render_options=dict(width=320, height=240, agent='A') # optional
-        ) 
+    def __init__(self, train):
+        if train:
+            self._env = gymnasium.make(
+                id='SingleAgentRaceEnv-v0', 
+                scenario='gyms/racecar_gym/scenarios/austria.yml',
+                render_mode='rgb_array_follow', # optional
+                render_options=dict(width=320, height=240, agent='A') # optional
+            )
+        else:
+            self._env = gymnasium.make(
+                id='SingleAgentRaceEnv-v0', 
+                scenario='gyms/racecar_gym/scenarios/austria.yml',
+                render_mode='human', # optional
+                render_options=dict(width=320, height=240, agent='A') # optional
+            ) 
         self.reward_range = [-np.inf, np.inf]
 
     @property
@@ -37,7 +45,13 @@ class Racecar:
         return action_space
 
     def step(self, action):
-        base_obs, reward, done, truncated, info = self._env.step(action)
+        if "action" in action:
+            racecar_action = {}
+            racecar_action["motor"] = action["action"][0]
+            racecar_action["steering"] = action["action"][1]
+        else:
+            racecar_action = action
+        base_obs, reward, done, truncated, info = self._env.step(racecar_action)
 
         obs = {
             "image": np.array(base_obs["hd_camera"], dtype=np.uint8),  # Ensure uint8

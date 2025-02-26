@@ -98,18 +98,18 @@ class Dreamer(nn.Module):
             
         obs = self._wm.preprocess(obs)
         embed = self._wm.encoder(obs)  # MLP encoder only
-        print("----------")
-        print("latent")
-        print(latent)
-        print("----------")
-        print("action")
-        print(action)
-        print("----------")
-        print("embed")
-        print(embed)
-        print("----------")
-        print("is_first")
-        print(obs["is_first"])
+        # print("----------")
+        # print("latent")
+        # print(latent)
+        # print("----------")
+        # print("action")
+        # print(action)
+        # print("----------")
+        # print("embed")
+        # print(embed.shape)
+        # print("----------")
+        # print("is_first")
+        # print(obs["is_first"])
         latent, _ = self._wm.dynamics.obs_step(latent, action, embed, obs["is_first"])
         
         if self._config.eval_state_mean:
@@ -193,8 +193,8 @@ def main(config):
     
     # Environment initialization
     print("Creating F1Tenth environments")
-    train_envs = [Racecar() for _ in range(config.envs)]
-    eval_envs = [Racecar() for _ in range(config.envs)]
+    train_envs = [Racecar(train=True) for _ in range(config.envs)]
+    eval_envs = [Racecar(train=False) for _ in range(config.envs)]
     #! train and eval envs set to the same track for now
     
     # Parallel processing setup (unchanged)

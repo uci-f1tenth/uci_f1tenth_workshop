@@ -170,6 +170,11 @@ def make_dataset(episodes, config):
 
 
 def main(config):
+    print(torch.__file__)
+    print("Python path:", sys.executable)
+    print("PyTorch version:", torch.__version__)
+    print("Built with CUDA:", torch.version.cuda)
+    print("CUDA available:", torch.cuda.is_available())
     # Initialization (unchanged core)
     tools.set_seed_everywhere(config.seed)
 

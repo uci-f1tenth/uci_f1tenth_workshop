@@ -40,7 +40,7 @@ class Config:
         self.eval_episode_num = 10
         self.log_every = 1e4
         self.reset_every = 0
-        self.device = "cuda:0"
+        self.device = "cpu"
         self.compile = True
         self.precision = 32
         self.debug = False

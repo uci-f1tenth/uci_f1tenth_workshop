@@ -18,7 +18,7 @@ class Racecar:
             self._env = gymnasium.make(
                 id='SingleAgentRaceEnv-v0', 
                 scenario='gyms/racecar_gym/scenarios/austria.yml',
-                render_mode='human', # optional
+                render_mode='rgb_array_follow', # optional
                 render_options=dict(width=320, height=240, agent='A') # optional
             ) 
         self.reward_range = [-np.inf, np.inf]

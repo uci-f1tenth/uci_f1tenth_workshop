@@ -11,6 +11,8 @@ from .sensors import Sensor
 class Vehicle(ABC):
     def control(self, commands: Dict) -> None:
         for actuator, command in commands.items():
+            #print(f"Available actuators: {self.actuators.keys()}")
+            #print(f"Trying to access actuator: {actuator}")
             self.actuators[actuator].control(command)
 
     def observe(self) -> Dict[str, Any]:

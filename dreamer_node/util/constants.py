@@ -16,7 +16,7 @@ class Constants:
         self.ODOMETRY_TOPIC = "/ego_racecar/odom"
 
         # Dreamer
-        self.DEVICE = "cuda"
+        self.DEVICE = "cuda:0"
 
         # action space
         self.min_steering = -0.418

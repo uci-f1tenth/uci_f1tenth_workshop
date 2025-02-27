@@ -314,11 +314,11 @@ def save_episodes(directory, episodes):
         for key, value in episode.items():
             # If value is a list and its elements are NumPy arrays, try to stack them.
             if isinstance(value, list) and all(isinstance(elem, np.ndarray) for elem in value):
-                #print(f"Attempting to stack key '{key}' with {len(value)} elements.")
+                # print(f"Attempting to stack key '{key}' with {len(value)} elements.")
                 try:
                     # Check shapes of each array before stacking
                     shapes = [v.shape for v in value]
-                    #print(f"Shapes for '{key}': {shapes}")
+                    print(f"Shapes for '{key}': {shapes}")
                     
                     # Try to stack assuming all arrays are the same shape.
                     processed_episode[key] = np.stack(value)
@@ -339,6 +339,19 @@ def save_episodes(directory, episodes):
             # Adjust `is_terminal` to ensure it's 2D
             if key == 'is_terminal' and processed_episode[key].ndim == 1:
                 processed_episode[key] = processed_episode[key][:, np.newaxis]  # Reshape to (12000, 1)
+
+        # Debug: print each key's resulting shape and unique values
+        for key, arr in processed_episode.items():
+            try:
+                arr_shape = np.asanyarray(arr).shape
+                arr_type = type(arr)
+                if isinstance(arr, np.ndarray) and arr.ndim == 1:
+                    unique_values = np.unique(arr)
+                    #print(f"{key}: type={arr_type}, shape={arr_shape}, unique values={unique_values}")
+                else:
+                    print(f"{key}: type={arr_type}, shape={arr_shape}")
+            except Exception as e:
+                print(f"{key}: type={type(arr)} (shape not available) due to: {e}")
 
         # Save the processed_episode to file.
         try:

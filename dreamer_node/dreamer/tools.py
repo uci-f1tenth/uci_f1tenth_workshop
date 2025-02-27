@@ -292,7 +292,7 @@ def convert(value, precision=32):
 
 
 def save_episodes(directory, episodes):
-    directory = pathlib.Path(directory).expanduser()
+    """directory = pathlib.Path(directory).expanduser()
     directory.mkdir(parents=True, exist_ok=True)
     for filename, episode in episodes.items():
         length = len(episode["reward"])
@@ -302,6 +302,54 @@ def save_episodes(directory, episodes):
             f1.seek(0)
             with filename.open("wb") as f2:
                 f2.write(f1.read())
+    return True"""
+    directory = pathlib.Path(directory).expanduser()
+    directory.mkdir(parents=True, exist_ok=True)
+    
+    for fname, episode in episodes.items():
+        length = len(episode["reward"])
+        file_path = directory / f"{fname}-{length}.npz"
+        
+        processed_episode = {}
+        for key, value in episode.items():
+            # If value is a list and its elements are NumPy arrays, try to stack them.
+            if isinstance(value, list) and all(isinstance(elem, np.ndarray) for elem in value):
+                #print(f"Attempting to stack key '{key}' with {len(value)} elements.")
+                try:
+                    # Check shapes of each array before stacking
+                    shapes = [v.shape for v in value]
+                    #print(f"Shapes for '{key}': {shapes}")
+                    
+                    # Try to stack assuming all arrays are the same shape.
+                    processed_episode[key] = np.stack(value)
+                except Exception as e:
+                    print(f"Could not stack key '{key}': {e}")
+                    # If stacking fails, convert each element.
+                    processed_episode[key] = np.array(
+                        [elem.item() if elem.size == 1 else elem for elem in value]
+                    )
+            else:
+                # Otherwise, attempt a direct conversion.
+                try:
+                    processed_episode[key] = np.array(value)
+                except Exception as e:
+                    print(f"Could not convert key '{key}' to array: {e}")
+                    processed_episode[key] = value  # fallback if needed
+
+            # Adjust `is_terminal` to ensure it's 2D
+            if key == 'is_terminal' and processed_episode[key].ndim == 1:
+                processed_episode[key] = processed_episode[key][:, np.newaxis]  # Reshape to (12000, 1)
+
+        # Save the processed_episode to file.
+        try:
+            with io.BytesIO() as f1:
+                np.savez_compressed(f1, **processed_episode)
+                f1.seek(0)
+                with file_path.open("wb") as f2:
+                    f2.write(f1.read())
+        except Exception as e:
+            print(f"Failed to save episode {file_path}: {e}")
+
     return True
 
 

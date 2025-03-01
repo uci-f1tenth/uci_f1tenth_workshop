@@ -30,6 +30,6 @@ jobs:
         with:
           message: "Update Development Guide PDF"
           add: "docs/Development_Guide.pdf"
-          push: "origin HEAD:${{ github.ref_name }}"
+          push: "origin HEAD:${{ github.head_ref || github.ref_name }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

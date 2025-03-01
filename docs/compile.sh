@@ -2,8 +2,6 @@
 #Run the Script from the folder you are in...
 CURRENT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 DOC_DIR="$CURRENT_DIR/Development_Guide"
-compile=""
-biberarg=""
 CMD_LATEX=lualatex
 # avoid $TERM warning
 export TERM=xterm-256color
@@ -25,13 +23,14 @@ cleanup
 
 echo "Compiling in Language: $1"
 if [ "$1" = "en" ] || [ "$2" = "en" ]; then
-	compile="$CMD_LATEX --shell-escape --jobname=\"development_guide\" \"\def\FOMEN{}\input{dissertation.tex}\""
-	biberarg="."
+	compile="$CMD_LATEX --shell-escape --jobname=development_guide '\\def\\FOMEN{}\\input{dissertation.tex}'"
+	biberarg="development_guide"
 else
-	compile="$CMD_LATEX --shell-escape \"dissertation.tex\""
-	biberarg="."
+	compile="$CMD_LATEX --shell-escape --jobname=development_guide '\\input{dissertation.tex}'"
+	biberarg="development_guide"
 fi
 
+echo "Running: $compile"
 eval "$compile"
 RETVAL="$?"
 if [[ "${RETVAL}" -ne 0 ]]; then

@@ -38,13 +38,6 @@ if [[ "${RETVAL}" -ne 0 ]]; then
 	exit ${RETVAL}
 fi
 
-biber "$biberarg"
-RETVAL="$?"
-if [[ "${RETVAL}" -ne 0 ]]; then
-	echo "biber run failed"
-	exit ${RETVAL}
-fi
-
 eval "$compile"
 RETVAL="$?"
 if [[ "${RETVAL}" -ne 0 ]]; then

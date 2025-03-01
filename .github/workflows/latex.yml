@@ -13,7 +13,7 @@ jobs:
         with:
           texlive_version: 2024
           run: |
-            ./compile.sh en
+            ./docs/compile.sh en
       - name: Upload english PDF as Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -25,7 +25,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          file: "*.pdf"
+          file: "docs/Development_Guide.pdf"
           tags: false
           overwrite: true
           draft: true

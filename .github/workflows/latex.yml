@@ -12,6 +12,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Give compile.sh execute permissions.
         run: chmod +x docs/compile.sh
+      - name: List files in directory
+        run: ls docs/Development_Guide/
       - name: Compile LaTeX document (English)
         uses: xu-cheng/texlive-action@v2
         with:

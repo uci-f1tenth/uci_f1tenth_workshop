@@ -1,0 +1,84 @@
+%\addcontentsline{toc}{chapter}{Development Process}
+\chapter{Environment Set Up}
+
+Setting up a consistent and reproducible development environment is crucial for a project of this nature.  To ensure that all team members have access to the necessary software and dependencies, and to simplify the deployment process, we have opted to use package manager UV and a virtual environment set up using the Python3 standard library. While this ensures a simpler and more stable production environment, it will require the use of local hardware resources, which are prone to compatibility issues. However, we are in active development to eliminate potential incompatibility for mainstream operating systems.
+
+This document serves as a comprehensive guide for contributing to the DreamerV3-F1Tenth project. Whether you're interested in adding new features, fixing bugs, improving documentation, or simply sharing your expertise, this guide will provide you with the necessary information and procedures to contribute effectively.
+
+\section{List of Packages}
+We aimed to utilize the latest version of every software to enhance the compatibility among devices and reduce potential deprecation. The list of packages are extensive and continuously updated; therefore, the list will only contain the core packages that are necessary for development.
+\begin{itemize}
+    \item \textbf{PyTorch}: The deep learning framework used by DreamerV3.
+    \item \textbf{racecar\_gym}: main gym environment forked from CPS\_TUWien.
+    \item \textbf{Gymnasium}: OpenAI's gym framework used to create custom environments and standardize Machine Learning interfaces.
+\end{itemize}
+For more insight in installed packages, please reference uv.lock file in the root directory.
+
+\section{Github}
+This project leverages GitHub for version control, collaboration, and issue tracking.  Understanding our GitHub workflow is essential for contributing effectively.  We utilize a branching model based on Gitflow, adapted for our project's needs, to manage code changes and ensure a stable main branch.
+\begin{itemize}
+    \item \textbf{main Branch}: This branch represents the stable, production-ready version of the codebase.  Only reviewed and tested code is merged into main.
+
+    \item \textbf{Feature Branches}:  These branches are created for developing new features, implementing improvements, or experimenting with new ideas.  They branch off from main and are eventually merged back into main after review.  Feature branch names should be descriptive and indicate the purpose of the branch (e.g., feature/lidar-integration, feature/mlp-world-model).
+
+    \item \textbf{Bugfix Branches}: These branches are specifically for addressing bug fixes.  They also branch off from main and are merged back into main after the bug is resolved.  Bugfix branch names should clearly identify the bug being fixed (e.g., bugfix/incorrect-reward-calculation).
+
+    \item \textbf{Pull Requests (PRs)}:  PRs are the mechanism for proposing changes to the main branch.  When you've completed your work on a feature or bugfix branch, you create a PR to request that your changes be reviewed and merged.
+
+    \item \textbf{Code Review}:  Before a PR is merged, it undergoes a code review by project maintainers.  This process helps ensure code quality, identify potential issues, and promote knowledge sharing.
+\end{itemize}
+
+\section{Development Setup}
+This section details the process for configuring the development environment for the DreamerV3-F1Tenth project. This setup provides a pre-configured environment containing all the necessary dependencies, including uv and the F1Tenth Gym simulator, accessible on your local machine.  This approach eliminates environment inconsistencies and simplifies the onboarding process for new contributors.
+
+\subsection{uv Package Manager}
+uv is a Python package and project manager that wraps the standard pip functionalities. We utilize uv to enhance the environment reliability. To install uv follow the guide:
+\href{https://docs.astral.sh/uv/getting-started/installation/#standalone-installer}{\textcolor{blue}{uv installation guide}}
+
+\subsection{Initial Set Up}
+\begin{enumerate}
+    \item Clone the repository using SSH (HTTP will not grant you access for direct commits):
+    \begin{verbatim}
+    git clone "git@github.com:uci-f1tenth/uci_f1tenth_workshop.git"
+    \end{verbatim}
+    \item Install dependencies by syncing the packages:
+    \begin{verbatim}
+    uv sync
+    \end{verbatim}
+    \item To run a file, run:
+    \begin{verbatim}
+    uv run path\to\file
+    \end{verbatim}
+    
+\end{enumerate}
+
+\subsection{Code Scheme}
+The codebase is organized to clearly separate the Gym environment integration from the core DreamerV3 implementation.  This modular design facilitates maintainability and allows for independent development of each component.  The key directories and files are described below:
+
+\begin{itemize}
+    \item \texttt{dreamer\_node/agents/dreamer\_agent.py}: This is the primary file responsible for interfacing with the ROS2 environment.  It handles the subscription to the scan topic for laser scan data and the publishing of control commands (steering and speed) to the drive topic.  This file contains the logic for receiving sensor data, preprocessing it as needed, feeding it to the DreamerV3 agent, and translating the agent's actions into ROS2 messages for the F1Tenth car.
+    \item \texttt{dreamer\_node/dreamer/dream.py}: This file serves as our entry point for training, orchestrating the interaction between the environment, the DreamerV3 agent, and the F1Tenth car's actuators.  The \texttt{dreamer} directory houses the DreamerV3 algorithm itself, allowing for focused development and modification of the core RL component.  This separation of concerns ensures a well-structured and easily maintainable codebase.
+    \item \texttt{dreamer\_node/env/}: This directory contains the various Gymnasium environment that includes the observation space, actions space, reward functions, and step functions.
+    \item \texttt{dreamer\_node/util/constants.py}: This file contains all the necessary constants and the configuration for the agent.
+    
+\end{itemize}
+
+\subsection{Linters and Formatters}
+By default, our Github workflow contains continuous integration that checks for correct style and formatting. We integrated \texttt{ruff} as our primary linter. If the file is not correctly formatted, any merging will be blocked by default.
+
+\begin{itemize}
+    \item To check any flags, use:
+    \begin{verbatim}
+    uv run ruff check
+    \end{verbatim}
+    \item You can also fix and error in checks with:
+    \begin{verbatim}
+    uv run rugg check --fix
+    \end{verbatim}
+    \item To auto-format the code base, use:
+    \begin{verbatim}
+    uv run ruff format
+    \end{verbatim}
+\end{itemize}
+
+

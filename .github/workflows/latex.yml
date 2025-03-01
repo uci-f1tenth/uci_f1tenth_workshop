@@ -1,13 +1,19 @@
-name: Latex
+name: latex
 on:
   push:
     tags: ["docs"]
+  pull_request:
+    branches: [main]
 jobs:
   build_latex:
     runs-on: ubuntu-24.04
     steps:
-      - name: Set up Git repository
+      - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Give compile.sh execute permissions.
+        run: chmod +x docs/compile.sh
       - name: Compile LaTeX document (English)
         uses: xu-cheng/texlive-action@v2
         with:
@@ -19,14 +25,11 @@ jobs:
         with:
           name: Development_Guide.pdf
           path: docs/Development_Guide.pdf
-      - name: Upload PDF Files to Release
-        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-        uses: xresloader/upload-to-github-release@v1
+      - name: Commit PDF update to branch
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: "Update Development Guide PDF"
+          add: "docs/Development_Guide.pdf"
+          push: "origin HEAD:${{ github.head_ref || github.ref_name }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          file: "docs/Development_Guide.pdf"
-          tags: false
-          overwrite: true
-          draft: true
-          update_latest_release: true

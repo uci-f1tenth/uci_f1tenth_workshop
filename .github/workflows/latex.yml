@@ -10,10 +10,20 @@ jobs:
     steps:
       - name: Set up Git repository
         uses: actions/checkout@v4
+      - name: Ensure we're on a branch
+        shell: bash
+        run: |
+          if [ -n "$GITHUB_HEAD_REF" ]; then
+            SAFE_BRANCH=$(echo "$GITHUB_HEAD_REF" | tr -cd '[:alnum:]-_.')
+            echo "Sanitized branch name: $SAFE_BRANCH"
+            git checkout -B "$SAFE_BRANCH"
+          else
+            BRANCH="${GITHUB_REF##refs/heads/}"
+            echo "Using branch from GITHUB_REF: $BRANCH"
+            git checkout "$BRANCH"
+          fi
       - name: Give compile.sh execute permissions.
         run: chmod +x docs/compile.sh
-      - name: List files in directory
-        run: ls docs/Development_Guide/
       - name: Compile LaTeX document (English)
         uses: xu-cheng/texlive-action@v2
         with:

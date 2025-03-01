@@ -8,20 +8,10 @@ jobs:
   build_latex:
     runs-on: ubuntu-24.04
     steps:
-      - name: Set up Git repository
+      - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Ensure we're on a branch
-        shell: bash
-        run: |
-          if [ -n "$GITHUB_HEAD_REF" ]; then
-            SAFE_BRANCH=$(echo "$GITHUB_HEAD_REF" | tr -cd '[:alnum:]-_.')
-            echo "Sanitized branch name: $SAFE_BRANCH"
-            git checkout -B "$SAFE_BRANCH"
-          else
-            BRANCH="${GITHUB_REF##refs/heads/}"
-            echo "Using branch from GITHUB_REF: $BRANCH"
-            git checkout "$BRANCH"
-          fi
+        with:
+          fetch-depth: 0
       - name: Give compile.sh execute permissions.
         run: chmod +x docs/compile.sh
       - name: Compile LaTeX document (English)
@@ -40,5 +30,6 @@ jobs:
         with:
           message: "Update Development Guide PDF"
           add: "docs/Development_Guide.pdf"
+          push: "origin HEAD:${{ github.ref_name }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

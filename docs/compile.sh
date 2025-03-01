@@ -55,7 +55,7 @@ fi
 # Remove temporary files at the end
 cleanup
 
-mv development_guide.pdf "$CURRENT_DIR/Developement_Guide.pdf"
+mv development_guide.pdf "$CURRENT_DIR/Development_Guide.pdf"
 echo "Moved PDF to $CURRENT_DIR/Development_Guide.pdf"
 echo "Directory listing of $CURRENT_DIR:"
 ls -l "$CURRENT_DIR"

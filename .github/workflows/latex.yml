@@ -25,13 +25,10 @@ jobs:
         with:
           name: Development_Guide.pdf
           path: docs/Development_Guide.pdf
-      - name: Upload PDF Files to Release
-        uses: xresloader/upload-to-github-release@v1
+      - name: Commit PDF update to branch
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: "Update Development Guide PDF"
+          add: "docs/Development_Guide.pdf"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          file: "docs/Development_Guide.pdf"
-          tags: false
-          overwrite: true
-          draft: true
-          update_latest_release: true

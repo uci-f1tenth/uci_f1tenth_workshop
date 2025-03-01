@@ -26,7 +26,6 @@ jobs:
           name: Development_Guide.pdf
           path: docs/Development_Guide.pdf
       - name: Upload PDF Files to Release
-        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         uses: xresloader/upload-to-github-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

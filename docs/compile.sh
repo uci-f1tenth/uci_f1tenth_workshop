@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
 #Run the Script from the folder you are in...
 CURRENT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+DOC_DIR="$CURRENT_DIR/Development_Guide"
 compile=""
 biberarg=""
 CMD_LATEX=lualatex
 # avoid $TERM warning
 export TERM=xterm-256color
+
+# Change to the document directory so LaTeX finds mmp.sty
+cd "$DOC_DIR" || {
+	echo "Directory $DOC_DIR not found"
+	exit 1
+}
 
 # Function to remove temporary files from previously crashed runs
 cleanup() {
@@ -13,16 +20,16 @@ cleanup() {
 }
 
 # Remove existing PDF and temporary files at the beginning
-rm -f "$CURRENT_DIR/Development_Guide.pdf"
+rm -f development_guide.pdf
 cleanup
 
 echo "Compiling in Language: $1"
 if [ "$1" = "en" ] || [ "$2" = "en" ]; then
-	compile="$CMD_LATEX --shell-escape --jobname=\"development_guide\" \"\def\FOMEN{}\input{$CURRENT_DIR/Development_Guide/dissertation.tex}\""
-	biberarg="$CURRENT_DIR/Development_Guide"
+	compile="$CMD_LATEX --shell-escape --jobname=\"development_guide\" \"\def\FOMEN{}\input{dissertation.tex}\""
+	biberarg="."
 else
-	compile="$CMD_LATEX --shell-escape \"$CURRENT_DIR/Development_Guide/dissertation.tex\""
-	biberarg="$CURRENT_DIR/Development_Guide"
+	compile="$CMD_LATEX --shell-escape \"dissertation.tex\""
+	biberarg="."
 fi
 
 eval "$compile"
@@ -55,6 +62,8 @@ fi
 
 # Remove temporary files at the end
 cleanup
+
+mv development_guide.pdf "$CURRENT_DIR/Developement_Guide.pdf"
 
 echo "PDF Compile: Success"
 

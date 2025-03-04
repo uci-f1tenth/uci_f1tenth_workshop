@@ -318,7 +318,7 @@ def save_episodes(directory, episodes):
                 # print(f"Attempting to stack key '{key}' with {len(value)} elements.")
                 try:
                     # Check shapes of each array before stacking
-                    shapes = [v.shape for v in value]
+                    # shapes = [v.shape for v in value]
                     # print(f"Shapes for '{key}': {shapes}")
 
                     # Try to stack assuming all arrays are the same shape.
@@ -349,7 +349,7 @@ def save_episodes(directory, episodes):
                 arr_shape = np.asanyarray(arr).shape
                 arr_type = type(arr)
                 if isinstance(arr, np.ndarray) and arr.ndim == 1:
-                    unique_values = np.unique(arr)
+                    # unique_values = np.unique(arr)
                     # print(f"{key}: type={arr_type}, shape={arr_shape}, unique values={unique_values}")
                 else:
                     print(f"{key}: type={arr_type}, shape={arr_shape}")

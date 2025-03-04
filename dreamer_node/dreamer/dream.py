@@ -254,7 +254,7 @@ def main(config):
     # Agent setup (unchanged)
     print("Initializing Dreamer agent")
     train_dataset = make_dataset(train_eps, config)
-    eval_dataset = make_dataset(eval_eps, config)
+    # eval_dataset = make_dataset(eval_eps, config)
     agent = Dreamer(
         train_envs[0].observation_space,
         train_envs[0].action_space,
@@ -313,8 +313,8 @@ def main(config):
     for env in train_envs + eval_envs:
         try:
             env.close()
-        except:
-            pass
+        except Exception as e:
+            print(e)
     return logdir
 
 

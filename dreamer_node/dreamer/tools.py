@@ -186,6 +186,7 @@ def simulate(
         length *= 1 - done
         # add to cache
         for index, (a, result, env) in enumerate(zip(action, results, envs)):
+            #TODO Make sure that the episode cache is saving the right observation data to match encoder/decoder
             o, r, d, _, info = result
             o = {k: convert(v) for k, v in o.items()}
             transition = o.copy()

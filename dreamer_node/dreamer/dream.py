@@ -170,12 +170,10 @@ def make_dataset(episodes, config):
 
 
 def main(config):
-    # Initialization (unchanged core)
+    # Initializing log directories (unchanged)
     tools.set_seed_everywhere(config.seed)
-
     if config.deterministic_run:
         tools.enable_deterministic_run()
-
     logdir = pathlib.Path(config.logdir).expanduser()
     config.traindir = config.traindir or logdir / "train_eps"
     config.evaldir = config.evaldir or logdir / "eval_eps"
@@ -184,7 +182,7 @@ def main(config):
     config.log_every //= config.action_repeat
     config.time_limit //= config.action_repeat
 
-    # Directory setup
+    # Directory setup (unchanged)
     logdir.mkdir(parents=True, exist_ok=True)
     config.traindir.mkdir(parents=True, exist_ok=True)
     config.evaldir.mkdir(parents=True, exist_ok=True)
@@ -195,7 +193,7 @@ def main(config):
     print("Creating F1Tenth environments")
     train_envs = [Racecar(train=True) for _ in range(config.envs)]
     eval_envs = [Racecar(train=False) for _ in range(config.envs)]
-    #! train and eval envs set to the same track for now
+    #! train and eval envs set to the same track for now, may want to change later
     
     # Parallel processing setup (unchanged)
     if config.parallel:
@@ -206,16 +204,16 @@ def main(config):
         train_envs = [Damy(env) for env in train_envs]
         eval_envs = [Damy(env) for env in eval_envs]
 
-    # Action space setup (continuous specific)
+    # Action space setup (continuous)
     acts = train_envs[0].action_space
     print("Action Space", acts)
     config.num_actions = len(acts)
 
-    # Dataset initialization (unchanged core)
+    # Dataset initialization (unchanged)
     train_eps = tools.load_episodes(config.traindir, limit=config.dataset_size)
     eval_eps = tools.load_episodes(config.evaldir, limit=1)
     
-    # Prefill with random actions (continuous specific)
+    # Prefill with random actions (continuous)
     state = None
     if not config.offline_traindir:
         prefill = max(0, config.prefill - count_steps(config.traindir))
@@ -226,15 +224,12 @@ def main(config):
         for key in acts.spaces:
             action_lows.append(torch.tensor(acts[key].low))
             action_highs.append(torch.tensor(acts[key].high))
-
         # Concatenate lows/highs across action components
         action_low = torch.cat(action_lows).repeat(config.envs, 1)
         action_high = torch.cat(action_highs).repeat(config.envs, 1)
-
         random_actor = torchd.independent.Independent(
             torchd.uniform.Uniform(action_low, action_high), 1
         )
-
         # In the simulation lambda, return a dictionary with action keys
         state = tools.simulate(
             lambda o, d, s: ({
@@ -245,11 +240,10 @@ def main(config):
             limit=config.dataset_size, steps=prefill
         )
 
-    # Agent setup (unchanged core)
+    # Agent setup (unchanged)
     print("Initializing Dreamer agent")
     train_dataset = make_dataset(train_eps, config)
     eval_dataset = make_dataset(eval_eps, config)
-
     agent = Dreamer(
         train_envs[0].observation_space,
         train_envs[0].action_space,

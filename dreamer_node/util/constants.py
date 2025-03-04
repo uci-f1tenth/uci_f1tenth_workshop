@@ -37,7 +37,7 @@ class Config:
         self.steps = int(1e6)  # Updated from f1tenth
         self.parallel = False
         self.eval_every = int(1e4)
-        self.eval_episode_num = 10
+        self.eval_episode_num = 1
         self.log_every = int(1e4)
         self.reset_every = 0
         self.device = "cuda:0"

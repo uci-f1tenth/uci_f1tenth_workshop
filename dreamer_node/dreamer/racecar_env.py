@@ -1,3 +1,6 @@
+# Wrapper function allowing for racecar_gym env to be passed into Dreamer V3
+
+
 import gymnasium
 import racecar_gym.envs.gym_api
 import numpy as np
@@ -7,6 +10,7 @@ class Racecar:
     metadata = {}
 
     def __init__(self, train):
+        #TODO: Figure out how to make render_mode='human' if train env so we can actually see what is happening
         if train:
             self._env = gymnasium.make(
                 id='SingleAgentRaceEnv-v0', 
@@ -26,6 +30,8 @@ class Racecar:
     @property
     def observation_space(self):
         base_obs_space  = self._env.observation_space
+        #! The Dreamer requires these additional keys to exist (see models.preprocess)
+        # We do not actually use them but if we want to remove them, we would need to change Dreamer code
         spaces = {
             "image": gymnasium.spaces.Box(
                 0, 255, shape=base_obs_space["hd_camera"].shape, dtype=np.uint8

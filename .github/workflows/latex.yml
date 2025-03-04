@@ -1,12 +1,12 @@
 name: latex
 on:
-  push:
-    tags: ["docs"]
   pull_request:
     branches: [main]
+    types: [labeled]
 jobs:
   build_latex:
     runs-on: ubuntu-24.04
+    if: contains(github.event.pull_request.labels.*.name, 'docs')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

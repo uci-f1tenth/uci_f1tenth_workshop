@@ -10,26 +10,26 @@ class Racecar:
     metadata = {}
 
     def __init__(self, train):
-        #TODO: Figure out how to make render_mode='human' if train env so we can actually see what is happening
+        # TODO: Figure out how to make render_mode='human' if train env so we can actually see what is happening
         if train:
             self._env = gymnasium.make(
-                id='SingleAgentRaceEnv-v0', 
-                scenario='gyms/racecar_gym/scenarios/austria.yml',
-                render_mode='rgb_array_follow', # optional
-                render_options=dict(width=320, height=240, agent='A') # optional
+                id="SingleAgentRaceEnv-v0",
+                scenario="gyms/racecar_gym/scenarios/austria.yml",
+                render_mode="rgb_array_follow",  # optional
+                render_options=dict(width=320, height=240, agent="A"),  # optional
             )
         else:
             self._env = gymnasium.make(
-                id='SingleAgentRaceEnv-v0', 
-                scenario='gyms/racecar_gym/scenarios/austria.yml',
-                render_mode='rgb_array_follow', # optional
-                render_options=dict(width=320, height=240, agent='A') # optional
-            ) 
+                id="SingleAgentRaceEnv-v0",
+                scenario="gyms/racecar_gym/scenarios/austria.yml",
+                render_mode="rgb_array_follow",  # optional
+                render_options=dict(width=320, height=240, agent="A"),  # optional
+            )
         self.reward_range = [-np.inf, np.inf]
 
     @property
     def observation_space(self):
-        base_obs_space  = self._env.observation_space
+        base_obs_space = self._env.observation_space
         #! The Dreamer requires these additional keys to exist (see models.preprocess)
         # We do not actually use them but if we want to remove them, we would need to change Dreamer code
         spaces = {
@@ -38,9 +38,11 @@ class Racecar:
             ),
             "is_first": gymnasium.spaces.Box(-np.inf, np.inf, (1,), dtype=np.float32),
             "is_last": gymnasium.spaces.Box(-np.inf, np.inf, (1,), dtype=np.float32),
-            "is_terminal": gymnasium.spaces.Box(-np.inf, np.inf, (1,), dtype=np.float32),
+            "is_terminal": gymnasium.spaces.Box(
+                -np.inf, np.inf, (1,), dtype=np.float32
+            ),
         }
-        for k,v in base_obs_space.items():
+        for k, v in base_obs_space.items():
             spaces[k] = v
         return gymnasium.spaces.Dict(spaces)
 
@@ -76,7 +78,7 @@ class Racecar:
     def render(self):
         return self._env.render()
 
-    def reset(self,seed=None, options=None):
+    def reset(self, seed=None, options=None):
         base_obs, info = self._env.reset(seed=seed, options=options)
 
         obs = {

@@ -2,10 +2,10 @@ import gymnasium
 import racecar_gym.envs.gym_api  # noqa: F401
 
 env = gymnasium.make(
-    id='SingleAgentRaceEnv-v0', 
-    scenario='gyms/racecar_gym/scenarios/austria.yml',
-    render_mode='human', # optional
-    render_options=dict(width=320, height=240, agent='A') # optional
+    id="SingleAgentRaceEnv-v0",
+    scenario="gyms/racecar_gym/scenarios/austria.yml",
+    render_mode="human",  # optional
+    render_options=dict(width=320, height=240, agent="A"),  # optional
 )
 
 done = False

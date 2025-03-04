@@ -39,26 +39,26 @@ class Dreamer(nn.Module):
         self._step = logger.step // config.action_repeat
         self._update_count = 0
         self._dataset = dataset
-        
+
         # World Model (modified for vector observations)
         self._wm = models.WorldModel(obs_space, act_space, self._step, config)
-        
+
         # Task Behavior (continuous control focus)
         self._task_behavior = models.ImagBehavior(config, self._wm)
-        
+
         # Compilation (kept but not F1Tenth-specific)
         if config.compile and os.name != "nt":
             self._wm = torch.compile(self._wm)
             self._task_behavior = torch.compile(self._task_behavior)
-            
+
         # Exploration (plan2explore recommended)
         def reward(f, s, a):
             return self._wm.heads["reward"](f).mean()
 
         self._expl_behavior = {
-            'greedy': lambda: self._task_behavior,
-            'random': lambda: expl.Random(config, act_space),
-            'plan2explore': lambda: expl.Plan2Explore(config, self._wm, reward)
+            "greedy": lambda: self._task_behavior,
+            "random": lambda: expl.Random(config, act_space),
+            "plan2explore": lambda: expl.Plan2Explore(config, self._wm, reward),
         }[config.expl_behavior]().to(config.device)
 
     def __call__(self, obs, reset, state=None, training=True):
@@ -66,7 +66,11 @@ class Dreamer(nn.Module):
 
         if training:
             # Training logic (unchanged core)
-            steps = self._config.pretrain if self._should_pretrain() else self._should_train(step)
+            steps = (
+                self._config.pretrain
+                if self._should_pretrain()
+                else self._should_train(step)
+            )
 
             for _ in range(steps):
                 self._train(next(self._dataset))
@@ -95,7 +99,7 @@ class Dreamer(nn.Module):
             latent = action = None
         else:
             latent, action = state
-            
+
         obs = self._wm.preprocess(obs)
         embed = self._wm.encoder(obs)  # MLP encoder only
         # print("----------")
@@ -111,12 +115,12 @@ class Dreamer(nn.Module):
         # print("is_first")
         # print(obs["is_first"])
         latent, _ = self._wm.dynamics.obs_step(latent, action, embed, obs["is_first"])
-        
+
         if self._config.eval_state_mean:
             latent["stoch"] = latent["mean"]
-            
+
         feat = self._wm.dynamics.get_feat(latent)
-        
+
         # Continuous action selection
         if not training:
             actor = self._task_behavior.actor(feat)
@@ -129,11 +133,11 @@ class Dreamer(nn.Module):
         else:
             actor = self._task_behavior.actor(feat)
             action = actor.sample()
-            
+
         logprob = actor.log_prob(action)
         latent = {k: v.detach() for k, v in latent.items()}
         action = action.detach()
-        
+
         # Removed discrete action conversion
         policy_output = {"action": action, "logprob": logprob}
         state = (latent, action)
@@ -188,13 +192,13 @@ def main(config):
     config.evaldir.mkdir(parents=True, exist_ok=True)
     step = count_steps(config.traindir)
     logger = tools.Logger(logdir, config.action_repeat * step)
-    
+
     # Environment initialization
     print("Creating F1Tenth environments")
     train_envs = [Racecar(train=True) for _ in range(config.envs)]
     eval_envs = [Racecar(train=False) for _ in range(config.envs)]
     #! train and eval envs set to the same track for now, may want to change later
-    
+
     # Parallel processing setup (unchanged)
     if config.parallel:
         train_envs = [Parallel(env, "process") for env in train_envs]
@@ -212,7 +216,7 @@ def main(config):
     # Dataset initialization (unchanged)
     train_eps = tools.load_episodes(config.traindir, limit=config.dataset_size)
     eval_eps = tools.load_episodes(config.evaldir, limit=1)
-    
+
     # Prefill with random actions (continuous)
     state = None
     if not config.offline_traindir:
@@ -232,12 +236,19 @@ def main(config):
         )
         # In the simulation lambda, return a dictionary with action keys
         state = tools.simulate(
-            lambda o, d, s: ({
-                "motor": random_actor.sample()[..., :1],       # Shape (envs, 1)
-                "steering": random_actor.sample()[..., 1:]     # Shape (envs, 1)
-            }, None),
-            train_envs, train_eps, config.traindir, logger,
-            limit=config.dataset_size, steps=prefill
+            lambda o, d, s: (
+                {
+                    "motor": random_actor.sample()[..., :1],  # Shape (envs, 1)
+                    "steering": random_actor.sample()[..., 1:],  # Shape (envs, 1)
+                },
+                None,
+            ),
+            train_envs,
+            train_eps,
+            config.traindir,
+            logger,
+            limit=config.dataset_size,
+            steps=prefill,
         )
 
     # Agent setup (unchanged)
@@ -251,7 +262,7 @@ def main(config):
         logger,
         train_dataset,
     ).to(config.device)
-    
+
     # Checkpoint loading (unchanged)
     if (logdir / "latest.pt").exists():
         checkpoint = torch.load(logdir / "latest.pt")
@@ -274,7 +285,7 @@ def main(config):
                 is_eval=True,
                 episodes=config.eval_episode_num,
             )
-            
+
         # Training phase
         print("Training step")
 
@@ -288,18 +299,24 @@ def main(config):
             steps=config.eval_every,
             state=state,
         )
-        
+
         # Checkpoint saving
-        torch.save({
-            "agent_state_dict": agent.state_dict(),
-            "optims_state_dict": tools.recursively_collect_optim_state_dict(agent),
-        }, logdir / "latest.pt")
+        torch.save(
+            {
+                "agent_state_dict": agent.state_dict(),
+                "optims_state_dict": tools.recursively_collect_optim_state_dict(agent),
+            },
+            logdir / "latest.pt",
+        )
 
     # Cleanup
     for env in train_envs + eval_envs:
-        try: env.close()
-        except: pass
+        try:
+            env.close()
+        except:
+            pass
     return logdir
+
 
 if __name__ == "__main__":
     config = Config()

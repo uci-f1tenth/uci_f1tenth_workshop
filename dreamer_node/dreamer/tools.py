@@ -186,7 +186,7 @@ def simulate(
         length *= 1 - done
         # add to cache
         for index, (a, result, env) in enumerate(zip(action, results, envs)):
-            #TODO Make sure that the episode cache is saving the right observation data to match encoder/decoder
+            # TODO Make sure that the episode cache is saving the right observation data to match encoder/decoder
             o, r, d, _, info = result
             o = {k: convert(v) for k, v in o.items()}
             transition = o.copy()
@@ -209,9 +209,7 @@ def simulate(
                 # record logs given from environments
                 for key in list(cache[i].keys()):
                     if "log_" in key:
-                        logger.scalar(
-                            key, float(np.array(cache[i][key]).sum())
-                        )
+                        logger.scalar(key, float(np.array(cache[i][key]).sum()))
                         # log items won't be used later
                         cache[i].pop(key)
 
@@ -306,21 +304,23 @@ def save_episodes(directory, episodes):
     return True"""
     directory = pathlib.Path(directory).expanduser()
     directory.mkdir(parents=True, exist_ok=True)
-    
+
     for fname, episode in episodes.items():
         length = len(episode["reward"])
         file_path = directory / f"{fname}-{length}.npz"
-        
+
         processed_episode = {}
         for key, value in episode.items():
             # If value is a list and its elements are NumPy arrays, try to stack them.
-            if isinstance(value, list) and all(isinstance(elem, np.ndarray) for elem in value):
+            if isinstance(value, list) and all(
+                isinstance(elem, np.ndarray) for elem in value
+            ):
                 # print(f"Attempting to stack key '{key}' with {len(value)} elements.")
                 try:
                     # Check shapes of each array before stacking
                     shapes = [v.shape for v in value]
                     # print(f"Shapes for '{key}': {shapes}")
-                    
+
                     # Try to stack assuming all arrays are the same shape.
                     processed_episode[key] = np.stack(value)
                 except Exception as e:
@@ -338,8 +338,10 @@ def save_episodes(directory, episodes):
                     processed_episode[key] = value  # fallback if needed
 
             # Adjust `is_terminal` to ensure it's 2D
-            if key == 'is_terminal' and processed_episode[key].ndim == 1:
-                processed_episode[key] = processed_episode[key][:, np.newaxis]  # Reshape to (12000, 1)
+            if key == "is_terminal" and processed_episode[key].ndim == 1:
+                processed_episode[key] = processed_episode[key][
+                    :, np.newaxis
+                ]  # Reshape to (12000, 1)
 
         # Debug: print each key's resulting shape and unique values
         for key, arr in processed_episode.items():
@@ -348,7 +350,7 @@ def save_episodes(directory, episodes):
                 arr_type = type(arr)
                 if isinstance(arr, np.ndarray) and arr.ndim == 1:
                     unique_values = np.unique(arr)
-                    #print(f"{key}: type={arr_type}, shape={arr_shape}, unique values={unique_values}")
+                    # print(f"{key}: type={arr_type}, shape={arr_shape}, unique values={unique_values}")
                 else:
                     print(f"{key}: type={arr_type}, shape={arr_shape}")
             except Exception as e:

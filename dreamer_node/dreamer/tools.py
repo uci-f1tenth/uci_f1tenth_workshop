@@ -150,14 +150,14 @@ def simulate(
             indices = [index for index, d in enumerate(done) if d]
             results = [envs[i].reset() for i in indices]
             results = [r() for r in results]
-            for index, result in zip(indices, results):
+            for index, (result, _) in zip(indices, results):
                 t = result.copy()
                 t = {k: convert(v) for k, v in t.items()}
                 # action will be added to transition in add_to_cache
                 t["reward"] = 0.0
                 t["discount"] = 1.0
                 # initial state should be added to cache
-                add_to_cache(cache, envs[index].id, t)
+                add_to_cache(cache, index, t)
                 # replace obs with done by initial state
                 obs[index] = result
         # step agents
@@ -172,6 +172,8 @@ def simulate(
             action = np.array(action)
         assert len(action) == len(envs)
         # step envs
+        # if is_eval:
+        #     print(action)
         results = [e.step(a) for e, a in zip(envs, action)]
         results = [r() for r in results]
         obs, reward, done = zip(*[p[:3] for p in results])
@@ -183,8 +185,9 @@ def simulate(
         step += len(envs)
         length *= 1 - done
         # add to cache
-        for a, result, env in zip(action, results, envs):
-            o, r, d, info = result
+        for index, (a, result, env) in enumerate(zip(action, results, envs)):
+            # TODO Make sure that the episode cache is saving the right observation data to match encoder/decoder
+            o, r, d, _, info = result
             o = {k: convert(v) for k, v in o.items()}
             transition = o.copy()
             if isinstance(a, dict):
@@ -193,24 +196,22 @@ def simulate(
                 transition["action"] = a
             transition["reward"] = r
             transition["discount"] = info.get("discount", np.array(1 - float(d)))
-            add_to_cache(cache, env.id, transition)
+            add_to_cache(cache, index, transition)
 
         if done.any():
             indices = [index for index, d in enumerate(done) if d]
             # logging for done episode
             for i in indices:
-                save_episodes(directory, {envs[i].id: cache[envs[i].id]})
-                length = len(cache[envs[i].id]["reward"]) - 1
-                score = float(np.array(cache[envs[i].id]["reward"]).sum())
-                video = cache[envs[i].id]["image"]
+                save_episodes(directory, {i: cache[i]})
+                length = len(cache[i]["reward"]) - 1
+                score = float(np.array(cache[i]["reward"]).sum())
+                video = cache[i]["image"]
                 # record logs given from environments
-                for key in list(cache[envs[i].id].keys()):
+                for key in list(cache[i].keys()):
                     if "log_" in key:
-                        logger.scalar(
-                            key, float(np.array(cache[envs[i].id][key]).sum())
-                        )
+                        logger.scalar(key, float(np.array(cache[i][key]).sum()))
                         # log items won't be used later
-                        cache[envs[i].id].pop(key)
+                        cache[i].pop(key)
 
                 if not is_eval:
                     step_in_dataset = erase_over_episodes(cache, limit)
@@ -290,7 +291,7 @@ def convert(value, precision=32):
 
 
 def save_episodes(directory, episodes):
-    directory = pathlib.Path(directory).expanduser()
+    """directory = pathlib.Path(directory).expanduser()
     directory.mkdir(parents=True, exist_ok=True)
     for filename, episode in episodes.items():
         length = len(episode["reward"])
@@ -300,6 +301,72 @@ def save_episodes(directory, episodes):
             f1.seek(0)
             with filename.open("wb") as f2:
                 f2.write(f1.read())
+    return True"""
+    directory = pathlib.Path(directory).expanduser()
+    directory.mkdir(parents=True, exist_ok=True)
+
+    for fname, episode in episodes.items():
+        length = len(episode["reward"])
+        file_path = directory / f"{fname}-{length}.npz"
+
+        processed_episode = {}
+        for key, value in episode.items():
+            # If value is a list and its elements are NumPy arrays, try to stack them.
+            if isinstance(value, list) and all(
+                isinstance(elem, np.ndarray) for elem in value
+            ):
+                # print(f"Attempting to stack key '{key}' with {len(value)} elements.")
+                try:
+                    # Check shapes of each array before stacking
+                    # shapes = [v.shape for v in value]
+                    # print(f"Shapes for '{key}': {shapes}")
+
+                    # Try to stack assuming all arrays are the same shape.
+                    processed_episode[key] = np.stack(value)
+                except Exception as e:
+                    print(f"Could not stack key '{key}': {e}")
+                    # If stacking fails, convert each element.
+                    processed_episode[key] = np.array(
+                        [elem.item() if elem.size == 1 else elem for elem in value]
+                    )
+            else:
+                # Otherwise, attempt a direct conversion.
+                try:
+                    processed_episode[key] = np.array(value)
+                except Exception as e:
+                    print(f"Could not convert key '{key}' to array: {e}")
+                    processed_episode[key] = value  # fallback if needed
+
+            # Adjust `is_terminal` to ensure it's 2D
+            if key == "is_terminal" and processed_episode[key].ndim == 1:
+                processed_episode[key] = processed_episode[key][
+                    :, np.newaxis
+                ]  # Reshape to (12000, 1)
+
+        # Debug: print each key's resulting shape and unique values
+        for key, arr in processed_episode.items():
+            try:
+                arr_shape = np.asanyarray(arr).shape
+                arr_type = type(arr)
+                if isinstance(arr, np.ndarray) and arr.ndim == 1:
+                    # unique_values = np.unique(arr)
+                    # print(f"{key}: type={arr_type}, shape={arr_shape}, unique values={unique_values}")
+                    pass
+                else:
+                    print(f"{key}: type={arr_type}, shape={arr_shape}")
+            except Exception as e:
+                print(f"{key}: type={type(arr)} (shape not available) due to: {e}")
+
+        # Save the processed_episode to file.
+        try:
+            with io.BytesIO() as f1:
+                np.savez_compressed(f1, **processed_episode)
+                f1.seek(0)
+                with file_path.open("wb") as f2:
+                    f2.write(f1.read())
+        except Exception as e:
+            print(f"Failed to save episode {file_path}: {e}")
+
     return True
 
 

@@ -351,6 +351,7 @@ def save_episodes(directory, episodes):
                 if isinstance(arr, np.ndarray) and arr.ndim == 1:
                     # unique_values = np.unique(arr)
                     # print(f"{key}: type={arr_type}, shape={arr_shape}, unique values={unique_values}")
+                    pass
                 else:
                     print(f"{key}: type={arr_type}, shape={arr_shape}")
             except Exception as e:

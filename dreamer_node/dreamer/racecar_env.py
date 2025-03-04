@@ -2,7 +2,6 @@
 
 
 import gymnasium
-import racecar_gym.envs.gym_api
 import numpy as np
 
 

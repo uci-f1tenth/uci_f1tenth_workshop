@@ -318,7 +318,7 @@ def save_episodes(directory, episodes):
                 try:
                     # Check shapes of each array before stacking
                     shapes = [v.shape for v in value]
-                    print(f"Shapes for '{key}': {shapes}")
+                    # print(f"Shapes for '{key}': {shapes}")
                     
                     # Try to stack assuming all arrays are the same shape.
                     processed_episode[key] = np.stack(value)

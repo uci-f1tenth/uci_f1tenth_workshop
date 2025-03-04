@@ -352,6 +352,7 @@ class MultiEncoder(nn.Module):
                 name="Encoder",
             )
             self.outdim += mlp_units
+        print("Encoder Outdim:", self.outdim)
 
     def forward(self, obs):
         outputs = []

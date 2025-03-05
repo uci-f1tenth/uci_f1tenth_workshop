@@ -12,6 +12,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from torch import distributions as torchd
+from torch.utils.tensorboard.writer import SummaryWriter
 
 
 def to_np(x):
@@ -57,6 +58,7 @@ class Logger:
         self._logdir = logdir
         self._last_step = None
         self._last_time = None
+        self._writer = SummaryWriter(log_dir=str(logdir))
         self._scalars = {}
         self._images = {}
         self._videos = {}
@@ -810,7 +812,7 @@ class Optimizer:
             "sgd": lambda: torch.optim.SGD(parameters, lr=lr),
             "momentum": lambda: torch.optim.SGD(parameters, lr=lr, momentum=0.9),
         }[opt]()
-        self._scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+        self._scaler = torch.GradScaler(enabled=use_amp)
 
     def __call__(self, loss, params, retain_graph=True):
         assert len(loss.shape) == 0, loss.shape

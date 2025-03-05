@@ -5,6 +5,7 @@ import functools
 
 import numpy as np
 from racecar_env import Racecar
+import racecar_gym.envs.gym_api
 
 import torch
 from torch import nn

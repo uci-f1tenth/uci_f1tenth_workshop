@@ -55,7 +55,6 @@ class SingleAgentRaceEnv(gymnasium.Env):
         done = self._scenario.agent.done(state)
         reward = self._scenario.agent.reward(state, action)
         observation["hd_camera"] = np.array(observation["hd_camera"], dtype=np.uint8)
-        print("taken actions: ", action)
         return observation, reward, done, False, state[self._scenario.agent.id]
 
     def reset(

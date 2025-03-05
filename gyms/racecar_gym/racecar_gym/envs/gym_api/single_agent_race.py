@@ -75,7 +75,8 @@ class SingleAgentRaceEnv(gymnasium.Env):
         self._scenario.world.update()
         state = self._scenario.world.state()
         obs["time"] = np.array(state[self._scenario.agent.id]["time"], dtype=np.float32)
-        print("obs: ", obs)
+        obs["hd_camera"] = obs["hd_camera"].astype(np.uint8)
+        print(obs)
         return obs, state[self._scenario.agent.id]
 
     def render(self) -> Union[RenderFrame, list[RenderFrame], None]:

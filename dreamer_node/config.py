@@ -1,28 +1,4 @@
-# constants.py
 from pathlib import Path
-import numpy as np
-
-
-class Constants:
-    """
-    Class to hold constants for the car.
-    """
-
-    def __init__(self):
-        self.FORWARD_SCAN_ARC = (np.deg2rad(-90.0), np.deg2rad(+90.0))
-        # Topics
-        self.LIDAR_TOPIC = "/scan"
-        self.DRIVE_TOPIC = "/drive"
-        self.ODOMETRY_TOPIC = "/ego_racecar/odom"
-
-        # Dreamer
-        self.DEVICE = "cuda"
-
-        # action space
-        self.min_steering = -0.418
-        self.max_steering = 0.418
-        self.min_speed = 1.5
-        self.max_speed = 19.67
 
 
 class Config:

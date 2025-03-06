@@ -8,11 +8,14 @@ import random
 
 import numpy as np
 
+from config import Config
 import torch
 from torch import nn
 from torch.nn import functional as F
 from torch import distributions as torchd
 from torch.utils.tensorboard.writer import SummaryWriter
+
+config = Config
 
 
 def to_np(x):
@@ -523,7 +526,7 @@ class DiscDist:
         high=20.0,
         transfwd=symlog,
         transbwd=symexp,
-        device="cuda",
+        device=config.device,
     ):
         self.logits = logits
         self.probs = torch.softmax(logits, -1)

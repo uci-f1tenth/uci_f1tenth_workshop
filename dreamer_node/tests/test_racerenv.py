@@ -1,7 +1,6 @@
 import unittest
 
 from env.racerenv import RacerEnv
-from config import Config
 
 
 class TestRacerEnv(unittest.TestCase):

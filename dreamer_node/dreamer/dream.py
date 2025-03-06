@@ -18,7 +18,7 @@ from parallel import Parallel, Damy
 
 sys.path.append(str(pathlib.Path(__file__).parent.parent))
 
-from util.constants import Config
+from config import Config
 
 
 def to_np(x):

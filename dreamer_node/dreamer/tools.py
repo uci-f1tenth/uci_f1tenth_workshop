@@ -810,7 +810,7 @@ class Optimizer:
             "sgd": lambda: torch.optim.SGD(parameters, lr=lr),
             "momentum": lambda: torch.optim.SGD(parameters, lr=lr, momentum=0.9),
         }[opt]()
-        self._scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+        self._scaler = torch.GradScaler(enabled=use_amp)
 
     def __call__(self, loss, params, retain_graph=True):
         assert len(loss.shape) == 0, loss.shape

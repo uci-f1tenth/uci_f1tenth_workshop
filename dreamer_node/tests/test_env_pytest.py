@@ -7,7 +7,7 @@ import sys
 from unittest.mock import MagicMock
 
 # Import necessary modules from the provided script
-from racecar_env import Racecar
+from dreamer.racecar_env import Racecar
 import tools
 import models
 import exploration as expl

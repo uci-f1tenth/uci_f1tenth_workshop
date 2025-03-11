@@ -5,6 +5,8 @@ import warnings
 import pathlib
 import sys
 from unittest.mock import MagicMock
+sys.path.append(str(pathlib.Path(__file__).resolve().parent.parent))  # Adds `dreamer_node`
+sys.path.append(str(pathlib.Path(__file__).resolve().parent.parent / "dreamer")) 
 
 # Import necessary modules from the provided script
 from dreamer.racecar_env import Racecar

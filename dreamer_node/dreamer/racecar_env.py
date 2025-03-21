@@ -25,6 +25,10 @@ class Racecar:
                 render_options=dict(width=320, height=240, agent="A"),  # optional
             )
         self.reward_range = [-np.inf, np.inf]
+        
+        # Impose 100 step limit on environment until debugging is done
+        self.steps_taken = 0
+        self.step_limit = 100
 
     @property
     def observation_space(self):
@@ -60,6 +64,11 @@ class Racecar:
             racecar_action = action
         base_obs, reward, done, truncated, info = self._env.step(racecar_action)
 
+        self.steps_taken += 1
+        if self.steps_taken >= 100:
+            truncated = True
+            done = True
+
         obs = {
             "image": np.array(base_obs["hd_camera"], dtype=np.uint8),  # Ensure uint8
             "is_first": np.array([False], dtype=np.float32),
@@ -79,6 +88,7 @@ class Racecar:
 
     def reset(self, seed=None, options=None):
         base_obs, info = self._env.reset(seed=seed, options=options)
+        self.steps_taken = 0
 
         obs = {
             "image": np.array(base_obs["hd_camera"], dtype=np.uint8),  # Ensure uint8

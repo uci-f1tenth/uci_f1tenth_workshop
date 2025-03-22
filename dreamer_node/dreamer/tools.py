@@ -148,11 +148,11 @@ def simulate(
         agent_state = None
         reward = [0] * len(envs)
     else:
-        for thing in state:
-            print(thing)
+        # for thing in state:
+        #     print(thing)
         step, episode, done, length, obs, agent_state, reward = state
-    print("Step limit:", steps)
-    print("Episode limit:", episodes)
+    # print("Step limit:", steps)
+    # print("Episode limit:", episodes)
     while (steps and step < steps) or (episodes and episode < episodes):
         # reset envs if necessary
         if done.any():
@@ -211,7 +211,7 @@ def simulate(
             indices = [index for index, d in enumerate(done) if d]
             # logging for done episode
             for i in indices:
-                save_episodes(directory, {i: cache[i]}, steps=steps)
+                save_episodes(directory, {i: cache[i]})
                 print("Saved the episode")
                 length = len(cache[i]["reward"]) - 1
                 score = float(np.array(cache[i]["reward"]).sum())
@@ -300,8 +300,7 @@ def convert(value, precision=32):
     return value.astype(dtype)
 
 
-def save_episodes(directory, episodes, steps=0):
-    # Only print debug statements if steps = 0 (Evaluation)
+def save_episodes(directory, episodes):
     """directory = pathlib.Path(directory).expanduser()
     directory.mkdir(parents=True, exist_ok=True)
     for filename, episode in episodes.items():
@@ -335,8 +334,7 @@ def save_episodes(directory, episodes, steps=0):
                     # Try to stack assuming all arrays are the same shape.
                     processed_episode[key] = np.stack(value)
                 except Exception as e:
-                    if steps == 0:
-                        print(f"Could not stack key '{key}': {e}")
+                    print(f"Could not stack key '{key}': {e}")
                     # If stacking fails, convert each element.
                     processed_episode[key] = np.array(
                         [elem.item() if elem.size == 1 else elem for elem in value]
@@ -346,8 +344,7 @@ def save_episodes(directory, episodes, steps=0):
                 try:
                     processed_episode[key] = np.array(value)
                 except Exception as e:
-                    if steps == 0:
-                        print(f"Could not convert key '{key}' to array: {e}")
+                    print(f"Could not convert key '{key}' to array: {e}")
                     processed_episode[key] = value  # fallback if needed
 
             # Adjust `is_terminal` to ensure it's 2D
@@ -366,11 +363,9 @@ def save_episodes(directory, episodes, steps=0):
                     # print(f"{key}: type={arr_type}, shape={arr_shape}, unique values={unique_values}")
                     pass
                 else:
-                    if steps == 0:
-                        print(f"{key}: type={arr_type}, shape={arr_shape}")
+                    print(f"{key}: type={arr_type}, shape={arr_shape}")
             except Exception as e:
-                if steps == 0:
-                    print(f"{key}: type={type(arr)} (shape not available) due to: {e}")
+                print(f"{key}: type={type(arr)} (shape not available) due to: {e}")
 
         # Save the processed_episode to file.
         try:
@@ -380,8 +375,7 @@ def save_episodes(directory, episodes, steps=0):
                 with file_path.open("wb") as f2:
                     f2.write(f1.read())
         except Exception as e:
-            if steps == 0:
-                print(f"Failed to save episode {file_path}: {e}")
+            print(f"Failed to save episode {file_path}: {e}")
 
     return True
 

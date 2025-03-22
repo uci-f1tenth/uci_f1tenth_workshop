@@ -29,6 +29,7 @@ class Racecar:
         # Impose 100 step limit on environment until debugging is done
         self.steps_taken = 0
         self.step_limit = 100
+        self.train = train
 
     @property
     def observation_space(self):
@@ -65,7 +66,7 @@ class Racecar:
         base_obs, reward, done, truncated, info = self._env.step(racecar_action)
 
         self.steps_taken += 1
-        if self.steps_taken >= 100:
+        if not self.train and self.steps_taken >= 100:
             truncated = True
             done = True
 

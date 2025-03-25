@@ -116,6 +116,20 @@ class Logger:
         self._last_step = step
         return steps / duration
 
+    def log_model_graph(self, model, sample_input):
+        self._writer.add_graph(model, sample_input)
+
+    def log_model_histograms(self, model, step):
+        for name, param in model.named_parameters():
+            self._writer.add_histogram(name, param, step)
+            if param.grad is not None:
+                self._writer.add_histogram(name + "_grad", param.grad, step)
+
+    def log_config(self, config_dict, step=None):
+        if step is None:
+            step = self.step
+        self._writer.add_text("info/config", json.dumps(config_dict, indent=2), step)
+
     def offline_scalar(self, name, value, step):
         self._writer.add_scalar("scalars/" + name, value, step)
 

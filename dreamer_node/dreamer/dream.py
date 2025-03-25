@@ -271,6 +271,11 @@ def main(config):
         tools.recursively_load_optim_state_dict(agent, checkpoint["optims_state_dict"])
         agent._should_pretrain._once = False
 
+    print(train_envs[0].observation_space)
+    sample_input = torch.randn(1, 1080).to(config.device)
+    dummy_reset = torch.tensor([False], dtype=torch.bool, device=config.device)
+    logger.log_model_graph(agent, (sample_input, dummy_reset))
+
     # Training loop (modified for vector obs)
     while agent._step < config.steps + config.eval_every:
         # Evaluation phase
@@ -301,6 +306,9 @@ def main(config):
             state=state,
         )
 
+        logger.write(fps=True)
+        logger.log_model_histograms(agent, agent._step)
+
         # Checkpoint saving
         torch.save(
             {
@@ -309,6 +317,8 @@ def main(config):
             },
             logdir / "latest.pt",
         )
+
+        # Logging
 
     # Cleanup
     for env in train_envs + eval_envs:

@@ -316,14 +316,22 @@ def save_episodes(directory, episodes):
     directory.mkdir(parents=True, exist_ok=True)
 
     for fname, episode in episodes.items():
-        length = len(episode["reward"])
+        valid_keys = [k for k in episode.keys() if "log_" not in k]
+        lengths = [len(episode[k]) for k in valid_keys]
+        length = min(lengths) if lengths else 0
         file_path = directory / f"{fname}-{length}.npz"
 
         processed_episode = {}
         for key, value in episode.items():
             # If value is a list and its elements are NumPy arrays, try to stack them.
-            if isinstance(value, list) and all(
-                isinstance(elem, np.ndarray) for elem in value
+
+            if "log_" not in key:
+                trunc_value = value[:length]  # Shorten to match action count
+            else:
+                continue
+
+            if isinstance(trunc_value, list) and all(
+                isinstance(elem, np.ndarray) for elem in trunc_value
             ):
                 # print(f"Attempting to stack key '{key}' with {len(value)} elements.")
                 try:
@@ -332,20 +340,22 @@ def save_episodes(directory, episodes):
                     # print(f"Shapes for '{key}': {shapes}")
 
                     # Try to stack assuming all arrays are the same shape.
-                    processed_episode[key] = np.stack(value)
+                    processed_episode[key] = np.stack(trunc_value)
                 except Exception as e:
                     print(f"Could not stack key '{key}': {e}")
                     # If stacking fails, convert each element.
-                    processed_episode[key] = np.array(
-                        [elem.item() if elem.size == 1 else elem for elem in value]
-                    )
+                    trunc_value = [
+                        np.array([elem.item()]) if elem.ndim == 0 else elem 
+                        for elem in trunc_value
+                    ]
+                    processed_episode[key] = np.stack(trunc_value)
             else:
                 # Otherwise, attempt a direct conversion.
                 try:
-                    processed_episode[key] = np.array(value)
+                    processed_episode[key] = np.array(trunc_value)
                 except Exception as e:
                     print(f"Could not convert key '{key}' to array: {e}")
-                    processed_episode[key] = value  # fallback if needed
+                    processed_episode[key] = trunc_value  # fallback if needed
 
             # Adjust `is_terminal` to ensure it's 2D
             if key == "is_terminal" and processed_episode[key].ndim == 1:
@@ -422,13 +432,49 @@ def sample_episodes(episodes, length, seed=0):
                 # 'is_first' comes after 'is_last'
                 index = 0
                 possible = length - size
-                ret = {
-                    k: np.append(
-                        ret[k], v[index : min(index + possible, total)].copy(), axis=0
-                    )
-                    for k, v in episode.items()
-                    if "log_" not in k
-                }
+                ret = {}
+                for k, v in episode.items():
+                    if "log_" not in k:
+                        slice_data = v[index : min(index + possible, total)]  # This is currently a list
+                        print(f"\nKey: {k}")
+                        print(f"Type of slice_data: {type(slice_data)}")
+                        print(f"Length of slice_data: {len(slice_data)}" if isinstance(slice_data, list) else "Not a list")
+
+                        # Check individual elements
+                        for i, elem in enumerate(slice_data[:5]):  # Print first few elements
+                            print(f"Element {i} type: {type(elem)} | Shape: {getattr(elem, 'shape', 'N/A')}")
+
+                        # SPECIAL HANDLING FOR IS_TERMINAL
+                        if k == 'is_terminal':
+                            # Convert scalar arrays to match the 1D format of others
+                            slice_data = [
+                                np.array([elem.item()]) if isinstance(elem, np.ndarray) and elem.ndim == 0 else elem 
+                                for elem in slice_data
+                            ]
+                        
+                        slice_data = np.array(slice_data).copy()  # Convert to NumPy array
+
+                        # Debugging prints
+                        print(f"Key: {k}")
+                        print(f"Slice type: {type(slice_data)}")  # Should print <class 'numpy.ndarray'>
+                        print(f"Slice shape: {slice_data.shape}")
+                        print(f"Data type of slice: {slice_data.dtype}")
+
+                        if k not in ret:
+                            ret[k] = slice_data  # Initialize if it doesn't exist
+                            print(f"Initializing ret[{k}] with shape {ret[k].shape}")
+                        else:
+                            print(f"ret[{k}].shape before append: {ret[k].shape}")
+                            print(f"Data type of ret[{k}] (before append): {ret[k].dtype}")
+                            ret[k] = np.append(ret[k], slice_data, axis=0)  # Append safely
+                            print(f"ret[{k}].shape after append: {ret[k].shape}")
+                # ret = {
+                #     k: np.append(
+                #         ret[k], v[index : min(index + possible, total)].copy(), axis=0
+                #     )
+                #     for k, v in episode.items()
+                #     if "log_" not in k
+                # }
                 if "is_first" in ret:
                     ret["is_first"][size] = True
             size = len(next(iter(ret.values())))

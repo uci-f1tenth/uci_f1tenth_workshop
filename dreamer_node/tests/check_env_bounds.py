@@ -4,6 +4,10 @@ import pathlib
 import functools
 
 import numpy as np
+from env.racecar_env import Racecar  # <-- Updated import
+
+
+import numpy as np
 from racecar_env import Racecar
 import racecar_gym.envs.gym_api  # noqa: F401
 

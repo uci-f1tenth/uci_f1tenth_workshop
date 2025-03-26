@@ -301,24 +301,19 @@ def convert(value, precision=32):
 
 
 def save_episodes(directory, episodes):
-    """directory = pathlib.Path(directory).expanduser()
-    directory.mkdir(parents=True, exist_ok=True)
-    for filename, episode in episodes.items():
-        length = len(episode["reward"])
-        filename = directory / f"{filename}-{length}.npz"
-        with io.BytesIO() as f1:
-            np.savez_compressed(f1, **episode)
-            f1.seek(0)
-            with filename.open("wb") as f2:
-                f2.write(f1.read())
-    return True"""
+
     directory = pathlib.Path(directory).expanduser()
     directory.mkdir(parents=True, exist_ok=True)
 
     for fname, episode in episodes.items():
-        valid_keys = [k for k in episode.keys() if "log_" not in k]
-        lengths = [len(episode[k]) for k in valid_keys]
-        length = min(lengths) if lengths else 0
+
+        # There are less actions stored than other observations
+        # Uncomment this code to limit other observations to the amount of actions
+        # valid_keys = [k for k in episode.keys() if "log_" not in k]
+        # lengths = [len(episode[k]) for k in valid_keys]
+        # length = min(lengths) if lengths else 0
+
+        length = len(episode["reward"])
         file_path = directory / f"{fname}-{length}.npz"
 
         processed_episode = {}
@@ -350,18 +345,18 @@ def save_episodes(directory, episodes):
                     ]
                     processed_episode[key] = np.stack(trunc_value)
             else:
-                # Otherwise, attempt a direct conversion.
+
                 try:
                     processed_episode[key] = np.array(trunc_value)
                 except Exception as e:
                     print(f"Could not convert key '{key}' to array: {e}")
-                    processed_episode[key] = trunc_value  # fallback if needed
+                    processed_episode[key] = trunc_value
 
             # Adjust `is_terminal` to ensure it's 2D
             if key == "is_terminal" and processed_episode[key].ndim == 1:
                 processed_episode[key] = processed_episode[key][
                     :, np.newaxis
-                ]  # Reshape to (12000, 1)
+                ]
 
         # Debug: print each key's resulting shape and unique values
         for key, arr in processed_episode.items():
@@ -369,8 +364,6 @@ def save_episodes(directory, episodes):
                 arr_shape = np.asanyarray(arr).shape
                 arr_type = type(arr)
                 if isinstance(arr, np.ndarray) and arr.ndim == 1:
-                    # unique_values = np.unique(arr)
-                    # print(f"{key}: type={arr_type}, shape={arr_shape}, unique values={unique_values}")
                     pass
                 else:
                     print(f"{key}: type={arr_type}, shape={arr_shape}")
@@ -391,6 +384,8 @@ def save_episodes(directory, episodes):
 
 
 def from_generator(generator, batch_size):
+    print("FROM GENERATOR")
+    # print(next(generator))
     while True:
         batch = []
         for _ in range(batch_size):
@@ -400,11 +395,14 @@ def from_generator(generator, batch_size):
             data[key] = []
             for i in range(batch_size):
                 data[key].append(batch[i][key])
+            # print(key)
+            # print(data[key])
             data[key] = np.stack(data[key], 0)
         yield data
 
 
 def sample_episodes(episodes, length, seed=0):
+    print("SAMPLING EPISODES")
     np_random = np.random.RandomState(seed)
     while True:
         size = 0
@@ -432,17 +430,16 @@ def sample_episodes(episodes, length, seed=0):
                 # 'is_first' comes after 'is_last'
                 index = 0
                 possible = length - size
-                ret = {}
                 for k, v in episode.items():
                     if "log_" not in k:
                         slice_data = v[index : min(index + possible, total)]  # This is currently a list
-                        print(f"\nKey: {k}")
-                        print(f"Type of slice_data: {type(slice_data)}")
-                        print(f"Length of slice_data: {len(slice_data)}" if isinstance(slice_data, list) else "Not a list")
+                        # print(f"\nKey: {k}")
+                        # print(f"Type of slice_data: {type(slice_data)}")
+                        # print(f"Length of slice_data: {len(slice_data)}" if isinstance(slice_data, list) else "Not a list")
 
                         # Check individual elements
-                        for i, elem in enumerate(slice_data[:5]):  # Print first few elements
-                            print(f"Element {i} type: {type(elem)} | Shape: {getattr(elem, 'shape', 'N/A')}")
+                        # for i, elem in enumerate(slice_data[:5]):  # Print first few elements
+                        #     print(f"Element {i} type: {type(elem)} | Shape: {getattr(elem, 'shape', 'N/A')}")
 
                         # SPECIAL HANDLING FOR IS_TERMINAL
                         if k == 'is_terminal':
@@ -455,26 +452,41 @@ def sample_episodes(episodes, length, seed=0):
                         slice_data = np.array(slice_data).copy()  # Convert to NumPy array
 
                         # Debugging prints
-                        print(f"Key: {k}")
-                        print(f"Slice type: {type(slice_data)}")  # Should print <class 'numpy.ndarray'>
-                        print(f"Slice shape: {slice_data.shape}")
-                        print(f"Data type of slice: {slice_data.dtype}")
+                        # print(f"Key: {k}")
+                        # print(f"Slice type: {type(slice_data)}")  # Should print <class 'numpy.ndarray'>
+                        # print(f"Slice shape: {slice_data.shape}")
+                        # print(f"Data type of slice: {slice_data.dtype}")
 
                         if k not in ret:
                             ret[k] = slice_data  # Initialize if it doesn't exist
-                            print(f"Initializing ret[{k}] with shape {ret[k].shape}")
+                            # print(f"Initializing ret[{k}] with shape {ret[k].shape}")
                         else:
-                            print(f"ret[{k}].shape before append: {ret[k].shape}")
-                            print(f"Data type of ret[{k}] (before append): {ret[k].dtype}")
-                            ret[k] = np.append(ret[k], slice_data, axis=0)  # Append safely
-                            print(f"ret[{k}].shape after append: {ret[k].shape}")
-                # ret = {
-                #     k: np.append(
-                #         ret[k], v[index : min(index + possible, total)].copy(), axis=0
-                #     )
-                #     for k, v in episode.items()
-                #     if "log_" not in k
-                # }
+                            # print(f"ret[{k}].shape before append: {ret[k].shape}")
+                            # print(f"Data type of ret[{k}] (before append): {ret[k].dtype}")
+                            # print("Ret[k] ", ret[k])
+                            # print("slice_data", slice_data)
+                            # ret[k] = np.append(ret[k], slice_data, axis=0)  # Append safely
+                            # print(f"ret[{k}].shape after append: {ret[k].shape}")
+
+                            # print("Ret[k] ", ret[k])
+                            # print("slice_data", slice_data)
+
+                            # Convert ret[k] to proper numpy array if needed
+                            if isinstance(ret[k], list):
+                                ret[k] = np.array([
+                                    np.array([float(x)]) if isinstance(x, bool) else x 
+                                    for x in ret[k]
+                                ])
+
+                            # Ensure 2D shape
+                            if ret[k].ndim == 1:
+                                ret[k] = ret[k].reshape(-1, 1)
+                            if slice_data.ndim == 1:
+                                slice_data = slice_data.reshape(-1, 1)
+
+                            # print(f"Shapes - ret: {ret[k].shape}, slice: {slice_data.shape}")
+                            ret[k] = np.append(ret[k], slice_data, axis=0)
+                            # print(f"After append: {ret[k].shape}")
                 if "is_first" in ret:
                     ret["is_first"][size] = True
             size = len(next(iter(ret.values())))

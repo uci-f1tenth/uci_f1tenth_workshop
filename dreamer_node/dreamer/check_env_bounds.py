@@ -1,35 +1,37 @@
 import sys
 import pathlib
+import numpy as np
 
-# Add path to `dreamer_node`
+# Add project root (2 levels up from this file) to sys.path
 sys.path.append(str(pathlib.Path(__file__).resolve().parent.parent))
 
-from racecar_env import Racecar
+# Internal imports (adjusted to match correct structure)
+from dreamer_node.racecar_env import Racecar
+from dreamer_node.util.constants import Config
+from dreamer_node import tools, models, exploration as expl
+from dreamer_node.parallel import Parallel, Damy
 
-from util.constants import Config
-import tools
-import models
-import exploration as expl
-from parallel import Parallel, Damy
-
-# External (side-effect import: registers envs)
+# External side-effect import: registers gym envs
 import racecar_gym.envs.gym_api  # noqa: F401
+
 
 def check_space_bounds(space, name):
     print(f"== {name} Space ==")
-    print(f"  Shape: {space.shape}")
-    print(f"  Dtype: {space.dtype}")
+    print(f"  Shape: {getattr(space, 'shape', 'None')}")
+    print(f"  Dtype: {getattr(space, 'dtype', 'None')}")
     if hasattr(space, 'low') and hasattr(space, 'high'):
         print(f"  Low:  {space.low}")
         print(f"  High: {space.high}")
     else:
         print("  No 'low' and 'high' attributes found")
 
+
 def check_value_within_bounds(value, space, name):
     assert space.contains(value), f"{name} value is out of bounds!"
     if hasattr(space, 'low') and hasattr(space, 'high'):
         assert np.all(value >= space.low), f"{name} below lower bound!"
         assert np.all(value <= space.high), f"{name} above upper bound!"
+
 
 def main():
     env = Racecar(train=True)
@@ -55,6 +57,7 @@ def main():
 
     env.close()
     print("\n✅ All checks passed.")
+
 
 if __name__ == "__main__":
     main()

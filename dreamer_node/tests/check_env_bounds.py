@@ -4,18 +4,6 @@ import pathlib
 import functools
 
 import numpy as np
-from env.racecar_env import Racecar  # <-- Updated import
-
-import sys
-import pathlib
-import numpy as np
-
-# Add project root (2 levels up from this file) to sys.path
-sys.path.append(str(pathlib.Path(__file__).resolve().parent.parent))
-
-from env.racecar_env import Racecar
-
-import numpy as np
 from racecar_env import Racecar
 import racecar_gym.envs.gym_api  # noqa: F401
 

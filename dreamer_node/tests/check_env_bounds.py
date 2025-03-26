@@ -1,24 +1,20 @@
-import os
 import sys
 import pathlib
-import functools
-
 import numpy as np
-from racecar_env import Racecar
-import racecar_gym.envs.gym_api  # noqa: F401
 
-import torch
-from torch import nn
-from torch import distributions as torchd
+# Add project root (2 levels up) to sys.path
+sys.path.append(str(pathlib.Path(__file__).resolve().parent.parent))
 
+# Custom modules
+from env.racecar_env import Racecar
+from util.constants import Config
 import tools
 import models
 import exploration as expl
 from parallel import Parallel, Damy
 
-sys.path.append(str(pathlib.Path(__file__).parent.parent))
-
-from util.constants import Config
+# External (side-effect import: registers envs)
+import racecar_gym.envs.gym_api  # noqa: F401
 
 def check_space_bounds(space, name):
     print(f"== {name} Space ==")

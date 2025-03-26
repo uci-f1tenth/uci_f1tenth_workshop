@@ -1,5 +1,24 @@
+import os
+import sys
+import pathlib
+import functools
+
 import numpy as np
-from dreamer_node.racecarenv import Racecar  # Update path if needed
+from racecar_env import Racecar
+import racecar_gym.envs.gym_api  # noqa: F401
+
+import torch
+from torch import nn
+from torch import distributions as torchd
+
+import tools
+import models
+import exploration as expl
+from parallel import Parallel, Damy
+
+sys.path.append(str(pathlib.Path(__file__).parent.parent))
+
+from util.constants import Config
 
 def check_space_bounds(space, name):
     print(f"== {name} Space ==")

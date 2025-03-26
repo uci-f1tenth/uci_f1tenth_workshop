@@ -1,12 +1,11 @@
 import sys
 import pathlib
-import numpy as np
 
-# Add project root (2 levels up) to sys.path
+# Add path to `dreamer_node`
 sys.path.append(str(pathlib.Path(__file__).resolve().parent.parent))
 
-# Custom modules
-from env.racecar_env import Racecar
+from racecar_env import Racecar
+
 from util.constants import Config
 import tools
 import models

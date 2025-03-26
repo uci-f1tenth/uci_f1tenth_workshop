@@ -1,17 +1,18 @@
 import sys
 import pathlib
-import numpy as np
 
-# Add project root (2 levels up from this file) to sys.path
+# Add path to dreamer_node
 sys.path.append(str(pathlib.Path(__file__).resolve().parent.parent))
 
-# Internal imports (adjusted to match correct structure)
-from dreamer_node.racecar_env import Racecar
-from dreamer_node.util.constants import Config
-from dreamer_node import tools, models, exploration as expl
-from dreamer_node.parallel import Parallel, Damy
+from racecar_env import Racecar
 
-# External side-effect import: registers gym envs
+from util.constants import Config
+import tools
+import models
+import exploration as expl
+from parallel import Parallel, Damy
+
+# External (side-effect import: registers envs)
 import racecar_gym.envs.gym_api  # noqa: F401
 
 

@@ -15,7 +15,7 @@ class Config:
     eval_episode_num = 1
     log_every = int(1e4)
     reset_every = 0
-    device = "cuda:0"
+    device = "cuda:1"
     compile = True
     precision = 32
     debug = False

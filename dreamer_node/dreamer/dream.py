@@ -276,7 +276,7 @@ def main(config):
         # Logging
         progress_percent = (agent._step / config.steps) * 100
         print(f"Training progress: {progress_percent:.2f}%")
-        logger.scalar("training_progress", progress_precent)
+        logger.scalar("training_progress", progress_percent)
         logger.write(step=agent._step)
         
         # Evaluation phase

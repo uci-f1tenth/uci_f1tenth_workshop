@@ -1,89 +1,126 @@
-# Import the gym_api module to trigger registration of your custom environment
-from racecar_gym.envs import gym_api
+import gymnasium as gym  
+import warnings  
+import numpy as np  
 
-# Import NumPy for working with numerical data and types
-import numpy as np
+# Suppress irrelevant third-party warnings for cleaner test output
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", message=".*RemovedInMarshmallow4Warning.*")
+warnings.filterwarnings(
+    "ignore",
+    message=".*Conversion of an array with ndim > 0 to a scalar is deprecated.*"
+)
 
-# Import the custom Racecar environment wrapper for Dreamer
-from dreamer.racecar_env import Racecar
 
-# running tests in terminal with PYTHONPATH=dreamer_node pytest dreamer_node/tests/test_racecar_env.py
+from racecar_gym.envs import gym_api  
+from dreamer.racecar_env import Racecar  
+
+
+
+#using the following to test console: PYTHONPATH=dreamer_node pytest -s dreamer_node/tests/test_racecar_env.py
+
+# Test 1: Reset Observation Structure
+
 
 def test_reset_keys_and_types():
-    # Initialize the environment in evaluation mode (train=False disables randomization or logging)
+    # Ensure that the first observation after reset has correct types and structure
     env = Racecar(train=False)
-
-    # Reset the environment to get the initial observation and info dictionary
     obs, info = env.reset()
 
-    # Check that the observation is a dictionary
     assert isinstance(obs, dict)
-
-    # Confirm that the observation contains an image key
     assert "image" in obs
-
-    # The image should be of type uint8 (standard for RGB images)
     assert obs["image"].dtype == np.uint8
-
-    # Check that the "is_first" key exists and is of type float32 and equals True on reset
     assert obs["is_first"].dtype == np.float32 and obs["is_first"][0] == True
-
-    # Check that the "is_last" key exists, is float32, and is False on reset
     assert obs["is_last"].dtype == np.float32 and obs["is_last"][0] == False
-
-    # Confirm that "is_terminal" exists and is float32 (used for learning termination signals)
     assert obs["is_terminal"].dtype == np.float32
 
+# ========================
+# Test 2: Step Output Structure
+# ========================
 
 def test_step_output_shapes():
-    # Initialize the environment
+    # Make sure env.step() returns all expected values and in correct types
     env = Racecar(train=False)
-
-    # Reset the environment to get the initial observation
     obs, _ = env.reset()
-
-    # Sample a valid random action from the environment's action space
     action = env.action_space.sample()
 
-    # Some environments use Dict action spaces, so we support both ndarray and dict input formats
+    # Support for both dict and ndarray action formats
     output = env.step({"action": action}) if isinstance(action, np.ndarray) else env.step(action)
 
-    # Unpack the output of a step
     obs, reward, done, truncated, info = output
+    assert isinstance(obs, dict)
+    assert isinstance(reward, np.float32)
+    assert isinstance(done, bool)
+    assert isinstance(truncated, bool)
+    assert isinstance(info, dict)
 
-    # Assertions to confirm the structure and types of the returned values
-    assert isinstance(obs, dict)                 # Observation should be a dictionary
-    assert isinstance(reward, np.float32)        # Reward should be a float32 scalar
-    assert isinstance(done, bool)                # Done should be a boolean flag
-    assert isinstance(truncated, bool)           # Truncated should be a boolean flag (e.g., time limit reached)
-    assert isinstance(info, dict)                # Info should be a dictionary with debug metadata
-
+# ========================
+# Test 3: Observation Space Structure
+# ========================
 
 def test_observation_space_structure():
-    # Initialize the environment
+    # Check if all required keys are declared in the observation space
     env = Racecar(train=False)
-
-    # Get the observation space (a gymnasium.spaces.Dict)
     obs_space = env.observation_space
 
-    # Check that all expected observation keys are in the Dict space
     assert "image" in obs_space.spaces
     assert "is_first" in obs_space.spaces
     assert "is_last" in obs_space.spaces
     assert "is_terminal" in obs_space.spaces
 
-    # Verify the data types for some key observation fields
+    # Check for expected datatypes
     assert obs_space.spaces["image"].dtype == np.uint8
     assert obs_space.spaces["is_first"].dtype == np.float32
 
+# ========================
+# Test 4: Observation Values Within Space
+# ========================
+
+def test_observation_values_within_space():
+    # Verify that values returned by the environment fall within the observation space bounds
+    env = Racecar(train=False)
+        # 🔍 Print observation space details
+    print("\n🟦 Observation Space:")
+    for key, space in env.observation_space.spaces.items():
+        print(f"  - {key}: {space}")
+
+    # 🔍 Print action space details
+    print("\n🟨 Action Space:")
+    print(env.action_space)
+
+    obs_space = env.observation_space
+
+    # Reset observation check
+    obs, _ = env.reset()
+    for key, space in obs_space.spaces.items():
+        if key not in obs:
+            warnings.warn(f"Missing optional key '{key}' in observation (reset)")
+            continue
+        value = obs[key]
+
+        # If expected shape is (1,) but value is scalar, patch it
+        if isinstance(space, gym.spaces.Box) and space.shape == (1,) and np.shape(value) == ():
+            value = np.array([value], dtype=space.dtype)
+
+        assert np.all(np.isfinite(value)), f"Non-finite value in '{key}' (reset)" # No NaNs or infs
+        assert space.contains(value), f"Value for '{key}' is out of bounds (reset)" # Value is in the defined Box or Discrete space
+
+    # Step observation check
+    action = env.action_space.sample()
+    obs, *_ = env.step(action)
+    for key, space in obs_space.spaces.items():
+        if key not in obs:
+            warnings.warn(f"Missing optional key '{key}' in observation (step)")
+            continue
+        value = obs[key]
+        assert np.all(np.isfinite(value)), f"Non-finite value in '{key}' (step)"
+        assert space.contains(value), f"Value for '{key}' is out of bounds (step)"
+
+# ========================
+# Test 5: Action Space Sampling
+# ========================
 
 def test_action_space_sampling():
-    # Initialize the environment
+    # Check that the environment's action space produces valid actions
     env = Racecar(train=False)
-
-    # Sample a random action
     action = env.action_space.sample()
-
-    # Check that the sampled action is valid within the action space
     assert env.action_space.contains(action)
-

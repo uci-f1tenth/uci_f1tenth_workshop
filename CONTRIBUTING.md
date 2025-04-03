@@ -109,6 +109,21 @@ ros2 run dreamer_node dreamer_node
 
 ---
 
+## Data Visualization
+
+### Tensorboard
+
+Open a new terminal window and run the following command.
+
+```bash
+%tensorboard --logdir .\logdir\f1tenth
+```
+
+This will run tensorboard at http://localhost:6006/.
+
+
+---
+
 ## Guidelines for Contributions
 
 ### Commit Messages

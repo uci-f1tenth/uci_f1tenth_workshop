@@ -16,7 +16,7 @@ Please reference: [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution g
 - [x] implemented f1tenth gym for testing environment.
 - [ ] waiting on issac sim implementation for better simulation environment.
 
-## Checklist:
+## Checklist
 
 - [x] basic structure implementation(bare bones)
 - [ ] LiDAR feed for encoded latent state

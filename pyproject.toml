@@ -8,6 +8,7 @@ dependencies = [
     "gymnasium>=1.0.0",
     "dreamer-node",
     "tensorboard>=2.19.0",
+    "pre-commit>=4.2.0",
 ]
 
 [tool.uv.sources]

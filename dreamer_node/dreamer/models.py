@@ -114,6 +114,9 @@ class WorldModel(nn.Module):
         # discount (batch_size, batch_length)
         data = self.preprocess(data)
 
+        for key in data:
+            print(key)
+
         with tools.RequiresGrad(self):
             with torch.cuda.amp.autocast(self._use_amp):
                 embed = self.encoder(data)

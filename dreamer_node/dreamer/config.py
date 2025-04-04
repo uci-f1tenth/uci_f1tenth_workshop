@@ -12,7 +12,7 @@ class Config:
     steps = int(1e6)  # Updated from f1tenth
     parallel = False
     eval_every = int(1e4)
-    eval_episode_num = 5
+    eval_episode_num = 2
     log_every = int(1e4)
     reset_every = 0
     device = "cuda:0"

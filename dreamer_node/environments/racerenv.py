@@ -56,12 +56,10 @@ class RacerEnv:
     ) -> float:
         """
         Denormalize a value from the range [-1, 1] to the range [min_physical_value, max_physical_value]
-
         Args:
             normalized_value: The normalized value to denormalize
             min_physical_value: The minimum value of the physical range
             max_physical_value: The maximum value of the physical range
-
         Returns:
             The denormalized value
         """

@@ -18,7 +18,7 @@ from parallel import Parallel, Damy
 
 sys.path.append(str(pathlib.Path(__file__).parent.parent))
 
-from util.constants import Config
+from config import Config
 
 
 def to_np(x):
@@ -273,6 +273,12 @@ def main(config):
 
     # Training loop (modified for vector obs)
     while agent._step < config.steps + config.eval_every:
+        # Logging
+        progress_percent = (agent._step / config.steps) * 100
+        print(f"Training progress: {progress_percent:.2f}%")
+        logger.scalar("training_progress", progress_percent)
+        logger.write(step=agent._step)
+
         # Evaluation phase
         if config.eval_episode_num > 0:
             print("Evaluating policy")

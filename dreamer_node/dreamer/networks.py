@@ -2,12 +2,15 @@ import math
 import numpy as np
 import re
 
+from config import Config
 import torch
 from torch import nn
 import torch.nn.functional as F
 from torch import distributions as torchd
 
 import tools
+
+config = Config()
 
 
 class RSSM(nn.Module):
@@ -352,6 +355,7 @@ class MultiEncoder(nn.Module):
                 name="Encoder",
             )
             self.outdim += mlp_units
+        print("Encoder Outdim:", self.outdim)
 
     def forward(self, obs):
         outputs = []
@@ -611,7 +615,7 @@ class MLP(nn.Module):
         unimix_ratio=0.01,
         outscale=1.0,
         symlog_inputs=False,
-        device="cuda",
+        device=config.device,
         name="NoName",
     ):
         super(MLP, self).__init__()

@@ -54,6 +54,7 @@ class SingleAgentRaceEnv(gymnasium.Env):
         )
         done = self._scenario.agent.done(state)
         reward = self._scenario.agent.reward(state, action)
+        observation["hd_camera"] = np.array(observation["hd_camera"], dtype=np.uint8)
         return observation, reward, done, False, state[self._scenario.agent.id]
 
     def reset(
@@ -75,6 +76,7 @@ class SingleAgentRaceEnv(gymnasium.Env):
         self._scenario.world.update()
         state = self._scenario.world.state()
         obs["time"] = np.array(state[self._scenario.agent.id]["time"], dtype=np.float32)
+        obs["hd_camera"] = np.array(obs["hd_camera"], dtype=np.uint8)
         return obs, state[self._scenario.agent.id]
 
     def render(self) -> Union[RenderFrame, list[RenderFrame], None]:

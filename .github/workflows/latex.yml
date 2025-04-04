@@ -1,0 +1,35 @@
+name: latex
+on:
+  pull_request:
+    branches: [main]
+    types: [labeled]
+jobs:
+  build_latex:
+    runs-on: ubuntu-24.04
+    if: contains(github.event.pull_request.labels.*.name, 'docs')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Give compile.sh execute permissions.
+        run: chmod +x docs/compile.sh
+      - name: Compile LaTeX document (English)
+        uses: xu-cheng/texlive-action@v2
+        with:
+          texlive_version: 2024
+          run: |
+            ./docs/compile.sh en
+      - name: Upload english PDF as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Development_Guide.pdf
+          path: docs/Development_Guide.pdf
+      - name: Commit PDF update to branch
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: "Update Development Guide PDF"
+          add: "docs/Development_Guide.pdf"
+          push: "origin HEAD:${{ github.head_ref || github.ref_name }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

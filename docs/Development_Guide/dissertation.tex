@@ -1,0 +1,81 @@
+\documentclass[11pt,a4paper]{report}
+
+% Aberstwyth dissertation LaTeX Template
+% Authors: Dr. Hannah Dee (hmd1@aber.ac.uk), Neil Taylor (nst@aber.ac.uk)
+% This has been adapted from the Leeds Thesis template and the 
+% Group Project template for Computer Science in Aberystywth University.
+% 
+% All comments and suggestions welcome.
+%
+% Template designed to be used with pdflatex: it may need alteration to
+% run with a different LaTeX engine.
+%
+% Note - this is offered as a starting point for your work. You are not 
+% required to use this template and can choose to create your own document 
+% without it. 
+
+% To build document on the unix command line, run four commands:
+ 
+% pdflatex dissertation
+% bibtex dissertation
+% pdflatex dissertation
+% pdflatex dissertation
+
+% you will end up with dissertation.pdf 
+\usepackage{mmp}
+
+% the following packages are used for citations - You only need to include one. 
+%
+% Use the cite package if you are using the numeric style (e.g. IEEEannot). 
+% Use the natbib package if you are using the author-date style (e.g. authordate2annot). 
+% Only use one of these and comment out the other one. 
+\graphicspath{ {./images/} }
+%\usepackage{natbib}
+
+% Use the following to selectively exclude chapters
+%\includeonly{cover,abstract,acknowledge,declare,chapter1,chapter2}
+
+\begin{document}
+
+% all of the include directives below refer to tex files
+% so \include{cover} includes cover.tex - to change the content,
+% edit the tex file
+
+\pagenumbering{roman}
+
+% This is the front page
+\include{cover}                        
+
+% Set up page numbering
+\pagestyle{empty}
+
+% declarations of originality 
+\include{declaration}               
+
+\include{acknowledgements} % Acknowledgements
+\include{abstract}                 % Abstract
+
+\pagenumbering{roman}
+\pagestyle{fancy}
+\fancyhead{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0 pt}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+
+\tableofcontents   
+\newpage
+
+% Set up page numbering
+\pagenumbering{arabic}
+
+\setchapterheaderfooter
+
+% include the chapters
+\include{Chapter1/chapter1}
+\include{Chapter2/chapter2}
+\include{Chapter3/chapter3}
+\include{Chapter4/chapter4}
+\include{Chapter5/chapter5}
+% add any additional chapters here
+
+\end{document}

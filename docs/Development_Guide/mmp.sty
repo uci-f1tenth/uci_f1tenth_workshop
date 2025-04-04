@@ -1,0 +1,301 @@
+%% LaTeX class to write Major/Minor projects for the Computer Science Department,
+%% Aberystwyth University.
+%%
+%% Written by Neil Taylor
+%% Comments and bugs to nst@aber.ac.uk
+%%
+%% See the accompanying file MMP_ProgressReport_example.tex for an example on how to
+%% use it.
+%%
+
+%\usepackage[a4paper,margin=2.5cm,nohead, headheight=3cm, headsep=20pt]{geometry}
+
+\usepackage{graphicx} %to allow images to be imported see example at end of template
+
+\usepackage{palatino} %or {times} etc
+\usepackage{plain} %bibliography style 
+\usepackage{amsmath} %math fonts - just in case
+\usepackage{amsfonts} %math fonts
+\usepackage{amssymb} %math fonts
+\usepackage{cite}
+\usepackage{xcolor}
+% packages for figures
+\usepackage{subcaption}
+\usepackage{float}
+
+% package for fonts
+\usepackage{times}
+
+% package to do page headers nice and fancy
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+
+% package for tidy url formatting - commented out in favour of the 
+% hyperref package which also provides clickable links in the document. 
+%\usepackage{url}
+
+% Package for url formatting and also creates hyperlinks.  
+\usepackage{hyperref}
+
+% Various parameters
+\setlength{\textheight}{229mm}
+\setlength{\topmargin}{-5.4mm}
+\setlength{\textwidth}{150mm}
+\setlength{\oddsidemargin}{10.6mm}
+\setlength{\evensidemargin}{10.6mm}
+\setlength{\headheight}{15.2pt}
+
+\parskip=6pt
+
+% index and section numbering depths
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{4}
+
+\newcommand{\is}{\hspace*{0.2in}} %little indent space
+
+\newcommand{\mmpdocdate}{\today}
+
+\newcommand{\documentdate}[1]{
+  \renewcommand{\mmpdocdate}{#1}
+}
+
+\newcommand{\name}[1]{
+  \newcommand{\showname}{#1}
+}
+
+\newcommand{\userid}[1]{ 
+   \newcommand{\showuserid}{#1}
+}
+
+\newcommand{\supervisor}[1]{
+  \newcommand{\showsupervisor}{#1}
+}
+
+\newcommand{\supervisorid}[1]{
+  \newcommand{\showsupervisorid}{#1}
+}
+
+\newcommand{\projecttitle}[1]{
+  \newcommand{\showprojecttitle}{#1}
+}
+
+\newcommand{\reporttitle}[1]{
+  \newcommand{\showreporttitle}{#1}
+}
+
+\newcommand{\projecttitlememoir}[1]{
+  \newcommand{\showprojecttitlememoir}{#1}
+}
+
+\newcommand{\version}[1]{
+  \newcommand{\showversion}{#1}
+}
+
+\newcommand{\docstatus}[1]{
+  \newcommand{\showdocstatus}{#1}
+}
+
+\newcommand{\degreeschemecode}[1]{
+  \newcommand{\showdegreeschemecode}{#1}
+}
+
+\newcommand{\degreeschemename}[1]{
+  \newcommand{\showdegreeschemename}{#1}
+}
+
+\newcommand{\modulecode}[1]{
+  \newcommand{\showmodulecode}{#1}
+}
+
+\newcommand{\wordcount}[1]{
+  \newcommand{\showwordcount}{#1}
+}
+
+\newcommand{\helv}{ 
+	%bold, 18point, 21point line spacing
+	\fontfamily{phv}\fontseries{b}\fontsize{18}{21}\selectfont
+} 
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+
+\def\verse{\let\\=\@centercr 
+ \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+ \rightmargin\leftmargin\advance\leftmargin 1.5em}\item[]}
+\let\endverse\endlist
+\def\quotation{\list{}{\listparindent 1.5em
+ \itemindent\listparindent
+ \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{\list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{\list{}{\labelwidth\z@ \itemindent-\leftmargin
+ \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+\def\theequation{\arabic{equation}}
+
+
+\def\titlepage{\@restonecolfalse\if@twocolumn\@restonecoltrue\onecolumn
+ \else \newpage \fi \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\def\thepart{\Roman{part}}
+\def\thesection {\arabic{chapter}.\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{2}
+
+
+% set up the information for the title page
+% title redefined to also set shorttitle
+
+\def\title#1{\gdef\@title{#1} \gdef\@shorttitle{#1}}
+\def\subtitle#1{\gdef\@subtitle{#1}}
+\def\authoremail#1{\gdef\@authoremail{#1}}
+
+\def\modulecode#1{\gdef\@modulecode{#1}}
+\def\moduletitle#1{\gdef\@moduletitle{#1}}
+
+\def\shorttitle#1{\gdef\@shorttitle{#1}}
+\def\client#1{\gdef\@client{{\it Client:} & #1 \\}} \gdef\@client{}
+\def\configref#1{\gdef\@configref{#1}}
+\def\projref#1{\gdef\@projref{{\it Proj. Ref.:} & #1 \\}} \gdef\@projref{}
+\def\version#1{\gdef\@version{#1}}
+\def\status#1{\gdef\@status{#1}}
+
+
+
+% set parskip to zero locally within the lists
+
+\def\tableofcontents{\section*{CONTENTS}
+ {\parskip=0pt \@starttoc{toc}}}
+
+\def\l@part#1#2{\addpenalty{\@secpenalty}
+ \addvspace{2.25em plus 1pt} \begingroup
+ \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+-\@pnumwidth 
+ {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}\par
+ \nobreak \endgroup}
+%\def\l@section#1#2{\addpenalty{\@secpenalty} \addvspace{1.0em plus 1pt}
+%\@tempdima 1.5em \begingroup
+% \parindent \z@ \rightskip \@pnumwidth 
+% \parfillskip -\@pnumwidth 
+% \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}\par
+% \endgroup}
+\def\l@section{\@dottedtocline{1}{1.5em}{2.3em}}
+\def\l@subsection{\@dottedtocline{2}{3.8em}{2.9em}}
+
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+
+\def\maketitle{\par
+ \begingroup
+ \def\thefootnote{\fnsymbol{footnote}}
+ \def\@makefnmark{\hbox 
+ to 0pt{$^{\@thefnmark}$\hss}} 
+ \if@twocolumn 
+ \twocolumn[\@maketitle] 
+ \else \newpage
+ \global\@topnum\z@ \@maketitle \fi\thispagestyle{myheadings}\@thanks
+ \endgroup
+ \setcounter{footnote}{0}
+ \let\maketitle\relax
+ \let\@maketitle\relax
+ \gdef\@thanks{}\gdef\@author{}\gdef\@title{}\let\thanks\relax}
+
+
+
+\def\@maketitle{{\headheight 12pt\newpage
+\thispagestyle{empty}\c@page\z@
+ \null
+ \vskip 0.4in
+ \hskip 0.3in
+\begin{minipage}{4.2in}
+ %\centering\mbox{\includegraphics[width=6cm]{Images/aber-uni-logo} }
+ \vskip 0.3in 
+ \centering\Large{\bf\@title\par}
+ \vskip 0.05in
+ \centering\Large{\bf Development Guide\par}
+ \normalsize
+ \vskip 0.3in
+
+ \vskip 0.4in
+  \centering {\it Author:}\hskip 0.05in \@author\hskip 0.05in (\@authoremail)
+ \vskip 0.05in
+
+ 
+ \vskip 0.3in
+ \centering {\@date} \vskip 0.05in 
+ \centering Version: {\@version}
+
+
+\end{minipage}
+
+\vfill
+\hskip 0.3in
+\begin{minipage}{5.2in}
+\begin{tabular}{l}
+Informatics and Computer Science \\
+University of California, Irvine\\
+Irvine, CA, US \\
+\end{tabular}
+\end{minipage}
+\newpage}}
+
+\def\setchapterheaderfooter{ 
+%%%%% Added to redefine the page style %%%%%%%%%%%%%%
+\fancypagestyle{plain}{%
+%\fancyhf{} % clear all header and footer fields
+\fancyhead[L]{\textsl{Chapter\ \thechapter}}
+\fancyhead[R]{\textsl{\leftmark}}
+
+\fancyfoot[C]{{\thepage} of \pageref{LastPage}} % except the center
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}}
+
+%%% Setting the header and footer 
+\fancyhead[L]{\textsl{Chapter\ \thechapter}}
+\fancyhead[R]{\textsl{\leftmark}}
+\fancyfoot[C]{{\thepage} of \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+}
+
+\def\setemptyheader{ 
+\fancypagestyle{plain}{%
+\fancyhead{}}
+
+\renewcommand{\headrulewidth}{0pt}
+}

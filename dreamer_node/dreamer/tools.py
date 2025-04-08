@@ -340,7 +340,7 @@ def convert(value, precision=32):
 #                     print(f"Could not stack key '{key}': {e}")
 #                     # If stacking fails, convert each element.
 #                     trunc_value = [
-#                         np.array([elem.item()]) if elem.ndim == 0 else elem 
+#                         np.array([elem.item()]) if elem.ndim == 0 else elem
 #                         for elem in trunc_value
 #                     ]
 #                     processed_episode[key] = np.stack(trunc_value)
@@ -382,6 +382,7 @@ def convert(value, precision=32):
 
 #     return True
 
+
 def save_episodes(directory, episodes):
     directory = pathlib.Path(directory).expanduser()
     directory.mkdir(parents=True, exist_ok=True)
@@ -391,14 +392,14 @@ def save_episodes(directory, episodes):
         valid_keys = [k for k in episode.keys() if "log_" not in k]
         lengths = [len(episode[k]) for k in valid_keys]
         length = min(lengths) if lengths else 0
-        
+
         if length < 1:
             print(f"Skipping empty episode {fname}")
             continue
-            
+
         file_path = directory / f"{fname}-{length}.npz"
         processed_episode = {}
-        
+
         print(f"\nProcessing episode {fname} (length: {length})")
         print("Initial lengths:", {k: len(episode[k]) for k in valid_keys})
 
@@ -406,7 +407,7 @@ def save_episodes(directory, episodes):
             try:
                 # 2. Get truncated values
                 trunc_value = episode[key][:length]
-                
+
                 # 3. Convert all elements to numpy arrays with consistent shapes
                 elements = []
                 for elem in trunc_value:
@@ -416,7 +417,7 @@ def save_episodes(directory, episodes):
                     if elem.ndim == 0:
                         elem = elem.reshape(1)  # Convert scalar to 1D array
                     elements.append(elem)
-                
+
                 # 4. Verify homogeneous shapes
                 shapes = [e.shape for e in elements]
                 unique_shapes = set(shapes)
@@ -425,10 +426,10 @@ def save_episodes(directory, episodes):
                         f"Mixed shapes in {key}: {unique_shapes} "
                         f"First 5 shapes: {shapes[:5]}"
                     )
-                
+
                 # 5. Stack along time dimension
                 processed_episode[key] = np.stack(elements)
-                
+
                 # 6. Ensure 2D shape for special keys
                 if key in ["is_first", "is_last", "is_terminal"]:
                     if processed_episode[key].ndim == 1:
@@ -439,7 +440,7 @@ def save_episodes(directory, episodes):
                 print(f"    Final shape: {processed_episode[key].shape}")
                 print(f"    Dtype: {processed_episode[key].dtype}")
                 print(f"    Sample values: {processed_episode[key][0]}")
-                
+
             except Exception as e:
                 print(f"\n  Failed processing {key}: {str(e)}")
                 print(f"First 3 elements: {trunc_value[:3]}")
@@ -449,7 +450,7 @@ def save_episodes(directory, episodes):
         print("\nFinal episode validation:")
         for k, v in processed_episode.items():
             print(f"  {k}: {type(v).__name__} {v.shape} {v.dtype}")
-        
+
         # Save and verify
         try:
             with io.BytesIO() as f1:
@@ -458,13 +459,13 @@ def save_episodes(directory, episodes):
                 with file_path.open("wb") as f2:
                     f2.write(f1.read())
             print(f"✅ Saved {file_path}")
-            
+
             # Load verification
             with np.load(file_path) as data:
                 print("\nReload verification:")
                 for k in data.keys():
                     print(f"  {k}: {data[k].shape} {data[k].dtype}")
-                
+
         except Exception as e:
             print(f"  Failed to save {file_path}: {e}")
             raise
@@ -535,10 +536,10 @@ def from_generator(generator, batch_size):
 #                         if k == 'is_terminal':
 #                             # Convert scalar arrays to match the 1D format of others
 #                             slice_data = [
-#                                 np.array([elem.item()]) if isinstance(elem, np.ndarray) and elem.ndim == 0 else elem 
+#                                 np.array([elem.item()]) if isinstance(elem, np.ndarray) and elem.ndim == 0 else elem
 #                                 for elem in slice_data
 #                             ]
-                        
+
 #                         slice_data = np.array(slice_data).copy()  # Convert to NumPy array
 
 #                         # Debugging prints
@@ -564,7 +565,7 @@ def from_generator(generator, batch_size):
 #                             # Convert ret[k] to proper numpy array if needed
 #                             if isinstance(ret[k], list):
 #                                 ret[k] = np.array([
-#                                     np.array([float(x)]) if isinstance(x, bool) else x 
+#                                     np.array([float(x)]) if isinstance(x, bool) else x
 #                                     for x in ret[k]
 #                                 ])
 
@@ -588,15 +589,13 @@ def from_generator(generator, batch_size):
 #         #         print("LIST", key, len(ret[key]))
 #         yield ret
 
+
 def sample_episodes(episodes, batch_length, seed=0):
     np_random = np.random.RandomState(seed)
     while True:
-        batch = {
-            k: [] for k in next(iter(episodes.values())).keys() 
-            if "log_" not in k
-        }
+        batch = {k: [] for k in next(iter(episodes.values())).keys() if "log_" not in k}
         total_steps = 0
-        
+
         # Weight episodes by their length
         episode_lengths = [len(next(iter(e.values()))) for e in episodes.values()]
         probs = np.array(episode_lengths, dtype=np.float32)
@@ -606,34 +605,38 @@ def sample_episodes(episodes, batch_length, seed=0):
             # Select episode proportional to its length
             episode = episodes[np_random.choice(len(episodes), p=probs)]
             episode = {k: v for k, v in episode.items() if "log_" not in k}
-            
+
             # Get valid slice range
             ep_length = len(next(iter(episode.values())))
             if ep_length < 2:
                 continue
-                
+
             available = batch_length - total_steps
             start = np_random.randint(0, max(1, ep_length - available))
             end = min(start + available, ep_length)
-            
+
             # Copy and convert data
             for key in episode.keys():
                 slice_data = episode[key][start:end]
-                
+
                 # Convert to numpy array if needed
                 if not isinstance(slice_data, np.ndarray):
                     slice_data = np.array(slice_data)
-                
+
                 # Handle scalar values and ensure 2D shape
                 if slice_data.ndim == 0:
                     slice_data = slice_data[np.newaxis]
-                if slice_data.ndim == 1 and key in ['is_first', 'is_last', 'is_terminal']:
+                if slice_data.ndim == 1 and key in [
+                    "is_first",
+                    "is_last",
+                    "is_terminal",
+                ]:
                     slice_data = slice_data[:, np.newaxis]
-                
+
                 # Convert bools to float32
                 if slice_data.dtype == bool:
                     slice_data = slice_data.astype(np.float32)
-                
+
                 if not batch[key]:
                     batch[key] = slice_data
                 else:
@@ -645,23 +648,22 @@ def sample_episodes(episodes, batch_length, seed=0):
                             f"New {slice_data.shape[1:]}"
                         )
                     batch[key] = np.concatenate([batch[key], slice_data], axis=0)
-            
+
             # Update tracking
             added = end - start
             total_steps += added
-            
+
             # Handle episode boundaries
-            if 'is_first' in batch:
+            if "is_first" in batch:
                 if total_steps == added:  # First addition
-                    batch['is_first'][:] = 0.0
-                    batch['is_first'][0] = 1.0
+                    batch["is_first"][:] = 0.0
+                    batch["is_first"][0] = 1.0
                 else:
                     new_first = np.zeros((added, 1), dtype=np.float32)
                     new_first[0] = 1.0
-                    batch['is_first'] = np.concatenate([
-                        batch['is_first'], 
-                        new_first
-                    ], axis=0)
+                    batch["is_first"] = np.concatenate(
+                        [batch["is_first"], new_first], axis=0
+                    )
 
         # Final validation
         seq_length = len(next(iter(batch.values())))
@@ -676,8 +678,9 @@ def sample_episodes(episodes, batch_length, seed=0):
         print("\nFinal batch shapes:")
         for k, v in batch.items():
             print(f"  {k}: {v.shape} {v.dtype}")
-            
+
         yield batch
+
 
 def load_episodes(directory, limit=None, reverse=True):
     directory = pathlib.Path(directory).expanduser()

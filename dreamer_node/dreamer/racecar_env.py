@@ -25,7 +25,7 @@ class Racecar:
                 render_options=dict(width=320, height=240, agent="A"),  # optional
             )
         self.reward_range = [-np.inf, np.inf]
-        
+
         # Impose 100 step limit on environment until debugging is done
         self.steps_taken = 0
         self.step_limit = 100

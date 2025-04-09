@@ -1,14 +1,19 @@
+from typing import Callable, Any, Dict
+
+import gymnasium.spaces
+
 import torch
 from torch import nn
 from torch import distributions as torchd
 
+import tools
 import models
 import networks
-import tools
+from config import Config
 
 
 class Random(nn.Module):
-    def __init__(self, config, act_space):
+    def __init__(self, config: Config, act_space: gymnasium.spaces.Dict):
         super(Random, self).__init__()
         self._config = config
         self._act_space = act_space
@@ -38,7 +43,12 @@ class Random(nn.Module):
 
 
 class Plan2Explore(nn.Module):
-    def __init__(self, config, world_model, reward):
+    def __init__(
+            self,
+            config: Config,
+            world_model: models.WorldModel,
+            reward: Callable[[Any, Any, Any], torch.Tensor]
+        ):
         super(Plan2Explore, self).__init__()
         self._config = config
         self._use_amp = True if config.precision == 16 else False
@@ -51,7 +61,7 @@ class Plan2Explore(nn.Module):
         else:
             feat_size = config.dyn_stoch + config.dyn_deter
             stoch = config.dyn_stoch
-        size = {
+        size: int = {
             "embed": world_model.embed_size,
             "stoch": stoch,
             "deter": config.dyn_deter,
@@ -83,7 +93,7 @@ class Plan2Explore(nn.Module):
     def train(self, start, context, data):
         with tools.RequiresGrad(self._networks):
             metrics = {}
-            stoch = start["stoch"]
+            stoch: torch.Tensor = start["stoch"]
             if self._config.dyn_discrete:
                 stoch = torch.reshape(
                     stoch, (stoch.shape[:-2] + ((stoch.shape[-2] * stoch.shape[-1]),))

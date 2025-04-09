@@ -1,9 +1,10 @@
 import copy
+
 import torch
 from torch import nn
 
-import networks
 import tools
+import networks
 
 
 def to_np(x):
@@ -33,8 +34,8 @@ class WorldModel(nn.Module):
         super(WorldModel, self).__init__()
         self._step = step
         self._use_amp = True if config.precision == 16 else False
-        self._config = config
         shapes = {k: tuple(v.shape) for k, v in obs_space.spaces.items()}
+        self._config = config
         self.encoder = networks.MultiEncoder(shapes, **config.encoder)
         self.embed_size = self.encoder.outdim
         self.dynamics = networks.RSSM(

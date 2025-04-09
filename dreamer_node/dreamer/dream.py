@@ -2,10 +2,10 @@ import os
 import sys
 import pathlib
 import functools
+from typing import Generator, NoReturn, Any, Dict, Tuple, List
 
 import numpy as np
-from racecar_env import Racecar
-import racecar_gym.envs.gym_api  # noqa: F401
+import gymnasium.spaces
 
 import torch
 from torch import nn
@@ -14,11 +14,12 @@ from torch import distributions as torchd
 import tools
 import models
 import exploration as expl
+from config import Config
+from racecar_env import Racecar
 from parallel import Parallel, Damy
 
 sys.path.append(str(pathlib.Path(__file__).parent.parent))
-
-from config import Config
+import racecar_gym.envs.gym_api  # noqa: F401
 
 
 def to_np(x):
@@ -26,7 +27,14 @@ def to_np(x):
 
 
 class Dreamer(nn.Module):
-    def __init__(self, obs_space, act_space, config, logger, dataset):
+    def __init__(
+        self,
+        obs_space: gymnasium.spaces.Dict,
+        act_space: gymnasium.spaces.Dict,
+        config: Config,
+        logger: tools.Logger,
+        dataset: Generator[dict, Any, NoReturn],
+    ):
         super(Dreamer, self).__init__()
         self._config = config
         self._logger = logger
@@ -36,7 +44,7 @@ class Dreamer(nn.Module):
         self._should_pretrain = tools.Once()
         self._should_reset = tools.Every(config.reset_every)
         self._should_expl = tools.Until(int(config.expl_until / config.action_repeat))
-        self._metrics = {}
+        self._metrics: Dict[str, int | list] = {}
         self._step = logger.step // config.action_repeat
         self._update_count = 0
         self._dataset = dataset
@@ -56,13 +64,15 @@ class Dreamer(nn.Module):
         def reward(f, s, a):
             return self._wm.heads["reward"](f).mean()
 
-        self._expl_behavior = {
+        self._expl_behavior: nn.Module = {
             "greedy": lambda: self._task_behavior,
             "random": lambda: expl.Random(config, act_space),
             "plan2explore": lambda: expl.Plan2Explore(config, self._wm, reward),
         }[config.expl_behavior]().to(config.device)
 
-    def __call__(self, obs, reset, state=None, training=True):
+    def __call__(
+        self, obs, reset, state=None, training: bool = True
+    ) -> Tuple[dict, Tuple[dict, Any]]:
         step = self._step
 
         if training:
@@ -174,7 +184,7 @@ def make_dataset(episodes, config):
     return dataset
 
 
-def main(config):
+def main(config: Config):
     # Initializing log directories (unchanged)
     tools.set_seed_everywhere(config.seed)
     if config.deterministic_run:
@@ -196,8 +206,12 @@ def main(config):
 
     # Environment initialization
     print("Creating F1Tenth environments")
-    train_envs = [Racecar(train=True) for _ in range(config.envs)]
-    eval_envs = [Racecar(train=False) for _ in range(config.envs)]
+    train_envs: List[Racecar] | List[Parallel] | List[Damy] = [
+        Racecar(train=True) for _ in range(config.envs)
+    ]
+    eval_envs: List[Racecar] | List[Parallel] | List[Damy] = [
+        Racecar(train=False) for _ in range(config.envs)
+    ]
     #! train and eval envs set to the same track for now, may want to change later
 
     # Parallel processing setup (unchanged)
@@ -223,18 +237,21 @@ def main(config):
     if not config.offline_traindir:
         prefill = max(0, config.prefill - count_steps(config.traindir))
         print(f"Prefill dataset ({prefill} steps)")
+
         # Extract low/high for each action component in the Dict space
-        action_lows = []
-        action_highs = []
+        action_lows: List[torch.Tensor] = []
+        action_highs: List[torch.Tensor] = []
         for key in acts.spaces:
             action_lows.append(torch.tensor(acts[key].low))
             action_highs.append(torch.tensor(acts[key].high))
+
         # Concatenate lows/highs across action components
         action_low = torch.cat(action_lows).repeat(config.envs, 1)
         action_high = torch.cat(action_highs).repeat(config.envs, 1)
         random_actor = torchd.independent.Independent(
             torchd.uniform.Uniform(action_low, action_high), 1
         )
+
         # In the simulation lambda, return a dictionary with action keys
         state = tools.simulate(
             lambda o, d, s: (

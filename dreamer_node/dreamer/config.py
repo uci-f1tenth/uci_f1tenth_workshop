@@ -3,8 +3,8 @@ from pathlib import Path
 
 class Config:
     logdir = Path("./logdir/f1tenth")
-    traindir = None  # Path("/dreamer/resource/train")
-    evaldir = None  # Path("/dreamer/resource/eval")
+    traindir: Path | None = None  # Path("/dreamer/resource/train")
+    evaldir: Path | None = None  # Path("/dreamer/resource/eval")
     offline_traindir = ""  # "/dreamer/resource/train"
     offline_evaldir = ""  # "/dreamer/resource/eval"
     seed = 0

@@ -1,14 +1,14 @@
+import re
 import math
 import numpy as np
-import re
 
-from config import Config
 import torch
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 from torch import distributions as torchd
 
 import tools
+from config import Config
 
 config = Config()
 

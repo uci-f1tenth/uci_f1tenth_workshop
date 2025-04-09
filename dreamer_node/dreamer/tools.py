@@ -15,8 +15,8 @@ from torch.nn import functional as F
 from torch import distributions as torchd
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from config import Config
-from parallel import Parallel, Damy
+from config import Config  # type: ignore
+from parallel import Parallel, Damy  # type: ignore
 
 config = Config
 
@@ -65,9 +65,9 @@ class Logger:
         self._last_step = None
         self._last_time = None
         self._writer = SummaryWriter(log_dir=str(logdir))
-        self._scalars = {}
-        self._images = {}
-        self._videos = {}
+        self._scalars: dict = {}
+        self._images: dict = {}
+        self._videos: dict = {}
         self.step = step
 
     def scalar(self, name, value):
@@ -137,10 +137,10 @@ def simulate(
     directory: Path,
     logger: Logger,
     is_eval=False,
-    limit: int | None=None,
+    limit: int | None = None,
     steps=0,
     episodes=0,
-    state: Tuple[int, int, np.ndarray, float, list, tuple, list] | None=None,
+    state: Tuple[int, int, np.ndarray, float, list, tuple, list] | None = None,
 ) -> Tuple[int, int, np.ndarray, float, list, tuple, list]:
     done: np.ndarray
     length: np.ndarray | float
@@ -166,7 +166,7 @@ def simulate(
 
             for index, (result, _) in zip(indices, results):
                 t: Dict[str | Any, np.ndarray | float | Any] = result.copy()
-                t = { k: convert(v) for k, v in t.items() }
+                t = {k: convert(v) for k, v in t.items()}
                 # action will be added to transition in add_to_cache
                 t["reward"] = 0.0
                 t["discount"] = 1.0
@@ -176,13 +176,13 @@ def simulate(
                 obs[index] = result
 
         # step agents
-        obs = { k: np.stack([o[k] for o in obs]) for k in obs[0] if "log_" not in k }
+        obs = {k: np.stack([o[k] for o in obs]) for k in obs[0] if "log_" not in k}
         action: Dict[str, Any] | List[Dict[Any, np.ndarray]] | np.ndarray
         action, agent_state = agent(obs, done, agent_state)
 
         if isinstance(action, dict):
             action = [
-                { k: np.array(action[k][i].detach().cpu()) for k in action }
+                {k: np.array(action[k][i].detach().cpu()) for k in action}
                 for i in range(len(envs))
             ]
         else:
@@ -207,7 +207,7 @@ def simulate(
         for index, (a, result, env) in enumerate(zip(action, results, envs)):
             # TODO Make sure that the episode cache is saving the right observation data to match encoder/decoder
             o, r, d, _, info = result
-            o = { k: convert(v) for k, v in o.items() }
+            o = {k: convert(v) for k, v in o.items()}
             transition = o.copy()
 
             if isinstance(a, dict):
@@ -269,23 +269,12 @@ def simulate(
             # FIFO
             cache.popitem(last=False)
 
-    output = cast(tuple[
-        int,
-        int,
-        np.ndarray[Any, Any],
-        float,
-        list[Any],
-        tuple[Any, ...],
-        list[Any]
-    ], (
-        step - steps,
-        episode - episodes,
-        done,
-        length,
-        obs,
-        agent_state,
-        reward
-    ))
+    output = cast(
+        tuple[
+            int, int, np.ndarray[Any, Any], float, list[Any], tuple[Any, ...], list[Any]
+        ],
+        (step - steps, episode - episodes, done, length, obs, agent_state, reward),
+    )
     return output
 
 

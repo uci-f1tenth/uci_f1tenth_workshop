@@ -3,8 +3,8 @@ import copy
 import torch
 from torch import nn
 
-import tools
-import networks
+import tools # type: ignore
+import networks # type: ignore
 
 
 def to_np(x):

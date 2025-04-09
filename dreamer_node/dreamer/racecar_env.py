@@ -1,12 +1,10 @@
 # Wrapper function allowing for racecar_gym env to be passed into Dreamer V3
-
-
 import gymnasium
 import numpy as np
 
 
 class Racecar:
-    metadata = {}
+    metadata: dict = {}
 
     def __init__(self, train):
         # TODO: Figure out how to make render_mode='human' if train env so we can actually see what is happening

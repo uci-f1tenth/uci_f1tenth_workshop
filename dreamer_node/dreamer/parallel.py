@@ -7,7 +7,7 @@ import traceback
 from functools import partial as bind
 from typing import Dict, Callable, Tuple, Any, List
 
-from racecar_env import Racecar
+from racecar_env import Racecar  # type: ignore
 
 
 class PMessage(enum.Enum):
@@ -82,9 +82,7 @@ class ProcessPipeWorker:
             pass
 
     def _submit(
-        self,
-        message: Message,
-        payload: Tuple[tuple, Dict[str, Any]] | None=None
+        self, message: Message, payload: Tuple[tuple, Dict[str, Any]] | None = None
     ) -> Future:
         callid = self._nextid
         self._nextid += 1
@@ -122,7 +120,7 @@ class ProcessPipeWorker:
             while True:
                 if not pipe.poll(0.1):
                     continue  # Wake up for keyboard interrupts.
-                
+
                 message: Message
                 payload: Tuple[tuple, Dict[str, Any]]
                 message, callid, payload = pipe.recv()
@@ -158,10 +156,11 @@ class ProcessPipeWorker:
 
 
 class Worker:
-    initializers = []
+    initializers: list = []
 
-    def __init__(self, fn, strategy="thread", state: bool=False):
+    def __init__(self, fn, strategy="thread", state: bool = False):
         if not state:
+
             def fn(s, *args, fn=fn, **kwargs):
                 return (s, fn(*args, **kwargs))
 

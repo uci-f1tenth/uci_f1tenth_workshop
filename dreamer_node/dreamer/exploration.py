@@ -1,15 +1,14 @@
-from typing import Callable, Any, Dict
-
 import gymnasium.spaces
+from typing import Callable, Any
 
 import torch
 from torch import nn
 from torch import distributions as torchd
 
-import tools
-import models
-import networks
-from config import Config
+import tools  # type: ignore
+import models  # type: ignore
+import networks  # type: ignore
+from config import Config  # type: ignore
 
 
 class Random(nn.Module):
@@ -44,11 +43,11 @@ class Random(nn.Module):
 
 class Plan2Explore(nn.Module):
     def __init__(
-            self,
-            config: Config,
-            world_model: models.WorldModel,
-            reward: Callable[[Any, Any, Any], torch.Tensor]
-        ):
+        self,
+        config: Config,
+        world_model: models.WorldModel,
+        reward: Callable[[Any, Any, Any], torch.Tensor],
+    ):
         super(Plan2Explore, self).__init__()
         self._config = config
         self._use_amp = True if config.precision == 16 else False

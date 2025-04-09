@@ -11,15 +11,15 @@ import torch
 from torch import nn
 from torch import distributions as torchd
 
-import tools # type: ignore
-import models # type: ignore
-from config import Config # type: ignore
-import exploration as expl # type: ignore
-from racecar_env import Racecar # type: ignore
-from parallel import Parallel, Damy # type: ignore
+import tools  # type: ignore
+import models  # type: ignore
+from config import Config  # type: ignore
+import exploration as expl  # type: ignore
+from racecar_env import Racecar  # type: ignore
+from parallel import Parallel, Damy  # type: ignore
 
 sys.path.append(str(pathlib.Path(__file__).parent.parent))
-import racecar_gym.envs.gym_api # type: ignore # noqa: F401 
+import racecar_gym.envs.gym_api  # type: ignore # noqa: F401
 
 
 def to_np(x):

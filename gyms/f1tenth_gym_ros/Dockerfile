@@ -34,6 +34,7 @@ RUN apt-get update --fix-missing && \
                        tmux \
                        ros-foxy-rviz2
 RUN apt-get -y dist-upgrade
+
 RUN pip3 install transforms3d
 RUN pip3 install torch
 RUN pip3 install matplotlib
@@ -41,13 +42,50 @@ RUN pip3 install ruamel.yaml
 RUN pip3 install einops
 RUN pip3 install protobuf
 RUN pip3 install gym
-RUN pip3 install numpy
 
+
+RUN pip3 install \
+    gymnasium==1.0.0 \
+    cloudpickle==3.1.1 \
+    farama-notifications==0.0.4 \
+    typing-extensions==4.12.2 \
+    pettingzoo==1.24.3 \
+    pybullet==3.2.7 \
+    scipy==1.10.1 \
+    yamldataclassconfig==1.5.0 \
+    dataclasses-json==0.6.7
+
+RUN pip3 install \
+    markupsafe==2.1.5 \
+    packaging==24.2 \
+    absl-py==2.1.0 \
+    grpcio==1.70.0 \
+    tensorboard==2.14.0 \
+    tensorboard-data-server==0.7.2 \
+    werkzeug==3.0.6 \
+    filelock==3.16.1 \
+    fsspec==2025.2.0 \
+    jinja2==3.1.5 \
+    networkx==3.1 \
+    sympy==1.13.1 \
+    mpmath==1.3.0 \
+    --no-deps  # Prevent conflicts with original packages
 
 # f1tenth gym
 RUN git clone https://github.com/f1tenth/f1tenth_gym
 RUN cd f1tenth_gym && \
     pip3 install -e .
+
+# racecar gym
+#RUN mkdir -p /sim_ws/install/racecar_gym && \
+#    ln -s /sim_ws/src/uci_f1tenth_workshop/gyms/racecar_gym/scenarios /sim_ws/install/racecar_gym/scenarios
+#RUN mkdir -p /sim_ws/install/racecar_gym
+RUN mkdir -p /sim_ws/install/racecar_gym/lib/python3.8/site-packages
+RUN ln -s /sim_ws/src/uci_f1tenth_workshop/gyms/racecar_gym/scenarios /sim_ws/install/racecar_gym/lib/python3.8/site-packages/scenarios
+
+# Ensure correct numpy version
+RUN pip3 uninstall -y numpy
+RUN pip3 install --no-cache-dir --ignore-installed numpy==1.23.0
 
 # ros2 gym bridge
 RUN mkdir -p sim_ws/src/f1tenth_gym_ros

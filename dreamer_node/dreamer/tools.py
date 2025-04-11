@@ -929,7 +929,6 @@ class Bernoulli:
 
     def sample(self, sample_shape=()):
         return self._dist.rsample(sample_shape)
-    
 
     def log_prob(self, x):
         x = x.squeeze(-1) if x.shape[-1] == 1 and x.shape[-2] == 1 else x
@@ -1178,6 +1177,7 @@ def static_scan(fn, inputs, start):
     flag = True
 
     for index in indices:
+
         def inp(x):
             return (_input[x] for _input in inputs)
 

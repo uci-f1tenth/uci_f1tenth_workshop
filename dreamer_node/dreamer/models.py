@@ -109,7 +109,7 @@ class WorldModel(nn.Module):
 
     def _train(self, data):
         data = self.preprocess(data)
-        
+
         # Debug 1: Check initial data shapes
         print("\n=== Data Shapes ===")
         for key, value in data.items():
@@ -121,7 +121,7 @@ class WorldModel(nn.Module):
                 # Debug 2: Check encoder output
                 print("\n=== Encoder Output ===")
                 print(f"embed shape: {embed.shape}")
-                
+
                 post, prior = self.dynamics.observe(
                     embed, data["action"], data["is_first"]
                 )
@@ -129,30 +129,30 @@ class WorldModel(nn.Module):
                 print("\n=== Dynamics Outputs ===")
                 print(f"post shapes: { {k: v.shape for k, v in post.items()} }")
                 print(f"prior shapes: { {k: v.shape for k, v in prior.items()} }")
-                
+
                 kl_free = self._config.kl_free
                 dyn_scale = self._config.dyn_scale
                 rep_scale = self._config.rep_scale
                 kl_loss, kl_value, dyn_loss, rep_loss = self.dynamics.kl_loss(
                     post, prior, kl_free, dyn_scale, rep_scale
                 )
-                
+
                 preds = {}
                 feat = self.dynamics.get_feat(post)
                 # Debug 4: Check features
                 print("\n=== Feature Vector ===")
                 print(f"feat shape: {feat.shape}")
-                
+
                 for name, head in self.heads.items():
                     grad_head = name in self._config.grad_heads
                     current_feat = feat if grad_head else feat.detach()
                     pred = head(current_feat)
-                    
+
                     # Debug 5: Check prediction outputs
                     print(f"\n=== Prediction Head '{name}' ===")
                     if isinstance(pred, dict):
                         for k, v in pred.items():
-                            if hasattr(v, 'shape'):
+                            if hasattr(v, "shape"):
                                 print(f"{k} shape: {v.shape}")
                             else:
                                 print(f"{k} is distribution with params:")
@@ -160,14 +160,14 @@ class WorldModel(nn.Module):
                                     if isinstance(v.__dict__[param], torch.Tensor):
                                         print(f"  {param}: {v.__dict__[param].shape}")
                     else:
-                        if hasattr(pred, 'shape'):
+                        if hasattr(pred, "shape"):
                             print(f"pred shape: {pred.shape}")
                         else:
                             print("pred is distribution with parameters:")
                             for param in pred.__dict__:
                                 if isinstance(pred.__dict__[param], torch.Tensor):
                                     print(f"  {param}: {pred.__dict__[param].shape}")
-                    
+
                     if type(pred) is dict:
                         preds.update(pred)
                     else:
@@ -177,30 +177,34 @@ class WorldModel(nn.Module):
                 for name, pred in preds.items():
                     # Debug 6: Final check before log_prob
                     print(f"\n=== Calculating Loss for '{name}' ===")
-    
+
                     # Handle distribution objects properly
-                    if hasattr(pred, 'base_dist'):  # For Independent/Normal distributions
+                    if hasattr(
+                        pred, "base_dist"
+                    ):  # For Independent/Normal distributions
                         print("Prediction Distribution Parameters:")
-                        if hasattr(pred.base_dist, 'mean'):
+                        if hasattr(pred.base_dist, "mean"):
                             print(f"  mean shape: {pred.base_dist.mean.shape}")
-                        if hasattr(pred.base_dist, 'logits'):
+                        if hasattr(pred.base_dist, "logits"):
                             print(f"  logits shape: {pred.base_dist.logits.shape}")
-                        if hasattr(pred, 'event_shape'):
+                        if hasattr(pred, "event_shape"):
                             print(f"  event_shape: {pred.event_shape}")
-                    elif hasattr(pred, 'logits'):  # For Discrete distributions
+                    elif hasattr(pred, "logits"):  # For Discrete distributions
                         print(f"  logits shape: {pred.logits.shape}")
-                    
+
                     # Print target data info
                     print(f"Target '{name}' shape: {data[name].shape}")
                     print(f"Target dtype: {data[name].dtype}")
-                    
+
                     # For debugging only - remove after use
-                    if name == 'decoder':
+                    if name == "decoder":
                         print("\nDEBUG - First 5 lidar targets:")
-                        print(data['lidar'][0,0,:5].cpu().numpy())
-                        if hasattr(pred, 'base_dist') and hasattr(pred.base_dist, 'mean'):
+                        print(data["lidar"][0, 0, :5].cpu().numpy())
+                        if hasattr(pred, "base_dist") and hasattr(
+                            pred.base_dist, "mean"
+                        ):
                             print("First 5 predicted means:")
-                            print(pred.base_dist.mean[0,0,:5].cpu().numpy())
+                            print(pred.base_dist.mean[0, 0, :5].cpu().numpy())
                     loss = -pred.log_prob(data[name])
                     assert loss.shape == embed.shape[:2], (name, loss.shape)
                     losses[name] = loss

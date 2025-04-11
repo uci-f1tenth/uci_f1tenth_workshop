@@ -190,50 +190,53 @@ class WorldModel(nn.Module):
     #     obs["cont"] = (1.0 - obs["is_terminal"]).unsqueeze(-1)
     #     return obs
 
-
     def preprocess(self, obs):
         # Convert all values to float32 tensors
         obs = {
             k: torch.tensor(v, device=self._config.device, dtype=torch.float32)
             for k, v in obs.items()
         }
-        
+
         # Normalize image
         obs["image"] = obs["image"] / 255.0
-        
+
         # Handle discount factor
         if "discount" in obs:
             obs["discount"] *= self._config.discount
             obs["discount"] = obs["discount"].unsqueeze(-1)
-        
+
         # Combine motor/steering into action if needed
         if "action" not in obs and all(k in obs for k in ["motor", "steering"]):
             # Stack motor and steering along last dimension
-            obs["action"] = torch.stack([
-                obs["motor"].squeeze(-1),  # Remove extra dim if present
-                obs["steering"].squeeze(-1)
-            ], dim=-1)
-            
+            obs["action"] = torch.stack(
+                [
+                    obs["motor"].squeeze(-1),  # Remove extra dim if present
+                    obs["steering"].squeeze(-1),
+                ],
+                dim=-1,
+            )
+
             # Ensure proper shape: (batch_size, seq_len, 2)
             if obs["action"].ndim == 2:  # If missing sequence dimension
                 obs["action"] = obs["action"].unsqueeze(1)
-        
+
         # Validate action shape
         if "action" in obs:
-            assert obs["action"].ndim == 3, \
+            assert obs["action"].ndim == 3, (
                 f"Action should be 3D (B,T,D), got {obs['action'].shape}"
-            assert obs["action"].shape[-1] == 2, \
+            )
+            assert obs["action"].shape[-1] == 2, (
                 f"Action dim should be 2 (motor+steering), got {obs['action'].shape[-1]}"
-        
+            )
+
         # Required flags
         assert "is_first" in obs, "Missing is_first key"
         assert "is_terminal" in obs, "Missing is_terminal key"
-        
+
         # Continuation signal
         obs["cont"] = (1.0 - obs["is_terminal"]).unsqueeze(-1)
-        
-        return obs
 
+        return obs
 
     def video_pred(self, data):
         data = self.preprocess(data)

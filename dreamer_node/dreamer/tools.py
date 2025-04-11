@@ -675,9 +675,9 @@ def sample_episodes(episodes, batch_length, seed=0):
             if v.dtype != np.float32 and v.dtype != np.uint8:
                 v = v.astype(np.float32)
 
-        print("\nFinal batch shapes:")
-        for k, v in batch.items():
-            print(f"  {k}: {v.shape} {v.dtype}")
+        # print("\nFinal batch shapes:")
+        # for k, v in batch.items():
+        #     print(f"  {k}: {v.shape} {v.dtype}")
 
         yield batch
 
@@ -929,11 +929,16 @@ class Bernoulli:
 
     def sample(self, sample_shape=()):
         return self._dist.rsample(sample_shape)
+    
 
     def log_prob(self, x):
+        x = x.squeeze(-1) if x.shape[-1] == 1 and x.shape[-2] == 1 else x
         _logits = self._dist.base_dist.logits
         log_probs0 = -F.softplus(_logits)
         log_probs1 = -F.softplus(-_logits)
+
+        print(f"Processed x shape: {x.shape}")
+        print(f"_logits shape: {_logits.shape}")
 
         return torch.sum(log_probs0 * (1 - x) + log_probs1 * x, -1)
 
@@ -1167,94 +1172,58 @@ def args_type(default):
 
 def static_scan(fn, inputs, start):
     print("\n=== static_scan Debug ===")
-    print(f"Initial inputs shapes: {[x.shape for x in inputs]}")
-    print(f"Start state type: {type(start)}")
 
     last = start
     indices = range(inputs[0].shape[0])
     flag = True
 
-    print(f"\nProcessing {len(indices)} timesteps...")
-
     for index in indices:
-        print(f"\n--- Timestep {index} ---")
-
         def inp(x):
             return (_input[x] for _input in inputs)
 
         current_inputs = list(inp(index))
-        print(
-            f"Current inputs shapes: {[x.shape if hasattr(x, 'shape') else type(x) for x in current_inputs]}"
-        )
-
         last = fn(last, *current_inputs)
-        print(f"fn output type: {type(last)}")
 
         if flag:  # First iteration
-            print("\nInitializing outputs...")
             if isinstance(last, dict):
-                print("Dict output detected")
                 outputs = {
                     key: value.clone().unsqueeze(0) for key, value in last.items()
                 }
-                print(
-                    f"Initial outputs dict shapes: { {k: v.shape for k, v in outputs.items()} }"
-                )
             else:
-                print("Tuple/list output detected")
                 outputs = []
                 for i, _last in enumerate(last):
                     if isinstance(_last, dict):
-                        print(f"  Output {i} is dict")
                         outputs.append(
                             {
                                 key: value.clone().unsqueeze(0)
                                 for key, value in _last.items()
                             }
                         )
-                        print(
-                            f"  Dict {i} shapes: { {k: v.shape for k, v in outputs[-1].items()} }"
-                        )
                     else:
-                        print(f"  Output {i} is tensor: shape {_last.shape}")
                         outputs.append(_last.clone().unsqueeze(0))
-                        print(f"  Tensor {i} shape: {outputs[-1].shape}")
             flag = False
         else:  # Subsequent iterations
             if isinstance(last, dict):
-                print("Appending dict outputs")
                 for key in last.keys():
-                    print(
-                        f"  Concatenating {key}: {outputs[key].shape} + {last[key].unsqueeze(0).shape}"
-                    )
                     outputs[key] = torch.cat(
                         [outputs[key], last[key].unsqueeze(0)], dim=0
                     )
             else:
-                print("Appending tuple/list outputs")
                 for j in range(len(outputs)):
                     if isinstance(last[j], dict):
-                        print(f"  Output {j} is dict")
                         for key in last[j].keys():
-                            print(
-                                f"    Concatenating {key}: {outputs[j][key].shape} + {last[j][key].unsqueeze(0).shape}"
-                            )
                             outputs[j][key] = torch.cat(
                                 [outputs[j][key], last[j][key].unsqueeze(0)], dim=0
                             )
                     else:
-                        print(
-                            f"  Output {j} is tensor: {outputs[j].shape} + {last[j].unsqueeze(0).shape}"
-                        )
                         outputs[j] = torch.cat(
                             [outputs[j], last[j].unsqueeze(0)], dim=0
                         )
 
     if isinstance(last, dict):
-        print("\nWrapping dict output in list")
         outputs = [outputs]
 
-    print("\nFinal outputs:")
+    print("Final outputs:")
     if isinstance(outputs[0], dict):
         for k, v in outputs[0].items():
             print(f"  {k}: {v.shape}")

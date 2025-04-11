@@ -130,6 +130,11 @@ class RSSM(nn.Module):
     def observe(self, embed, action, is_first, state=None):
         def swap(x):
             return x.permute([1, 0] + list(range(2, len(x.shape))))
+        
+        print("\n=== Observe Debug ===")
+        print(f"Initial embed shape: {embed.shape}")
+        print(f"Initial action shape: {action.shape}")
+        print(f"is_first shape: {is_first.shape}")
 
         # (batch, time, ch) -> (time, batch, ch)
         embed, action, is_first = swap(embed), swap(action), swap(is_first)

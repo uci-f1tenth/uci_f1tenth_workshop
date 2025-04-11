@@ -114,9 +114,6 @@ class WorldModel(nn.Module):
         # discount (batch_size, batch_length)
         data = self.preprocess(data)
 
-        for key in data:
-            print(key)
-
         with tools.RequiresGrad(self):
             with torch.cuda.amp.autocast(self._use_amp):
                 embed = self.encoder(data)
@@ -176,22 +173,67 @@ class WorldModel(nn.Module):
         return post, context, metrics
 
     # this function is called during both rollout and training
+    # def preprocess(self, obs):
+    #     obs = {
+    #         k: torch.tensor(v, device=self._config.device, dtype=torch.float32)
+    #         for k, v in obs.items()
+    #     }
+    #     obs["image"] = obs["image"] / 255.0
+    #     if "discount" in obs:
+    #         obs["discount"] *= self._config.discount
+    #         # (batch_size, batch_length) -> (batch_size, batch_length, 1)
+    #         obs["discount"] = obs["discount"].unsqueeze(-1)
+    #     # 'is_first' is necesarry to initialize hidden state at training
+    #     assert "is_first" in obs
+    #     # 'is_terminal' is necesarry to train cont_head
+    #     assert "is_terminal" in obs
+    #     obs["cont"] = (1.0 - obs["is_terminal"]).unsqueeze(-1)
+    #     return obs
+
+
     def preprocess(self, obs):
+        # Convert all values to float32 tensors
         obs = {
             k: torch.tensor(v, device=self._config.device, dtype=torch.float32)
             for k, v in obs.items()
         }
+        
+        # Normalize image
         obs["image"] = obs["image"] / 255.0
+        
+        # Handle discount factor
         if "discount" in obs:
             obs["discount"] *= self._config.discount
-            # (batch_size, batch_length) -> (batch_size, batch_length, 1)
             obs["discount"] = obs["discount"].unsqueeze(-1)
-        # 'is_first' is necesarry to initialize hidden state at training
-        assert "is_first" in obs
-        # 'is_terminal' is necesarry to train cont_head
-        assert "is_terminal" in obs
+        
+        # Combine motor/steering into action if needed
+        if "action" not in obs and all(k in obs for k in ["motor", "steering"]):
+            # Stack motor and steering along last dimension
+            obs["action"] = torch.stack([
+                obs["motor"].squeeze(-1),  # Remove extra dim if present
+                obs["steering"].squeeze(-1)
+            ], dim=-1)
+            
+            # Ensure proper shape: (batch_size, seq_len, 2)
+            if obs["action"].ndim == 2:  # If missing sequence dimension
+                obs["action"] = obs["action"].unsqueeze(1)
+        
+        # Validate action shape
+        if "action" in obs:
+            assert obs["action"].ndim == 3, \
+                f"Action should be 3D (B,T,D), got {obs['action'].shape}"
+            assert obs["action"].shape[-1] == 2, \
+                f"Action dim should be 2 (motor+steering), got {obs['action'].shape[-1]}"
+        
+        # Required flags
+        assert "is_first" in obs, "Missing is_first key"
+        assert "is_terminal" in obs, "Missing is_terminal key"
+        
+        # Continuation signal
         obs["cont"] = (1.0 - obs["is_terminal"]).unsqueeze(-1)
+        
         return obs
+
 
     def video_pred(self, data):
         data = self.preprocess(data)

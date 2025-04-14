@@ -18,7 +18,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 from config import Config  # type: ignore
 from parallel import Parallel, Damy  # type: ignore
 
-config = Config
+config = Config()
 
 
 def to_np(x):
@@ -553,7 +553,7 @@ class DiscDist:
         high=20.0,
         transfwd=symlog,
         transbwd=symexp,
-        device=config.device,
+        device=config.DEVICE,
     ):
         self.logits = logits
         self.probs = torch.softmax(logits, -1)

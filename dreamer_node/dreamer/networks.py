@@ -615,7 +615,7 @@ class MLP(nn.Module):
         unimix_ratio=0.01,
         outscale=1.0,
         symlog_inputs=False,
-        device=config.device,
+        device=config.DEVICE,
         name="NoName",
     ):
         super(MLP, self).__init__()

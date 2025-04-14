@@ -1,22 +1,21 @@
+import math
+import pathlib
+from typing import Tuple, List
+
+import torch
+from torch import distributions as torchd
+import numpy as np
+from sensor_msgs.msg import LaserScan
+from ackermann_msgs.msg import AckermannDriveStamped
+
 import rclpy
 from rclpy.node import Node
 from rclpy.time import Time
 from rclpy.duration import Duration
 
-import numpy as np
-from sensor_msgs.msg import LaserScan
-from ackermann_msgs.msg import AckermannDriveStamped
-from typing import Tuple, List
-import math
-import pathlib
-import torch
-from torch import distributions as torchd
-
-from config import Config
-
-from dreamer.dream import Dreamer
-from dreamer.dream import Parallel, Damy
 import dreamer.tools as tools
+from dreamer.config import Config
+from dreamer.dream import Dreamer, Parallel, Damy
 
 
 class Constants:
@@ -73,47 +72,47 @@ class DreamerRacer(Node):
 
         self.dreamer_init(self.config)
 
-    def dreamer_init(self, config):
-        tools.set_seed_everywhere(config.seed)
-        if config.deterministic_run:
+    def dreamer_init(self, config: Config):
+        tools.set_seed_everywhere(config.SEED)
+        if config.DETERMINISTIC_RUN:
             tools.enable_deterministic_run()
-        logdir = pathlib.Path(config.logdir).expanduser()
-        config.traindir = config.traindir or logdir / "train_eps"
-        config.evaldir = config.evaldir or logdir / "eval_eps"
-        config.steps //= config.action_repeat
-        config.eval_every //= config.action_repeat
-        config.log_every //= config.action_repeat
-        config.time_limit //= config.action_repeat
+        logdir = pathlib.Path(config.LOG_DIRECTORY).expanduser()
+        config.TRAINING_DIRECTORY = config.TRAINING_DIRECTORY or logdir / "train_eps"
+        config.EVALUATION_DIRECTORY = config.EVALUATION_DIRECTORY or logdir / "eval_eps"
+        config.STEPS //= config.ACTION_REPEAT
+        config.EVALUATION_EVERY //= config.ACTION_REPEAT
+        config.LOG_EVERY //= config.ACTION_REPEAT
+        config.TIME_LIMIT //= config.ACTION_REPEAT
 
         print("Logdir", logdir)
         logdir.mkdir(parents=True, exist_ok=True)
-        config.traindir.mkdir(parents=True, exist_ok=True)
-        config.evaldir.mkdir(parents=True, exist_ok=True)
+        config.TRAINING_DIRECTORY.mkdir(parents=True, exist_ok=True)
+        config.EVALUATION_DIRECTORY.mkdir(parents=True, exist_ok=True)
         step = sum(
-            int(str(n).split("-")[-1][:-4]) - 1 for n in config.traindir.glob("*.npz")
+            int(str(n).split("-")[-1][:-4]) - 1 for n in config.TRAINING_DIRECTORY.glob("*.npz")
         )
         # step in logger is environmental step
-        logger = tools.Logger(logdir, config.action_repeat * step)
+        logger = tools.Logger(logdir, config.ACTION_REPEAT * step)
 
         print("Create envs.")
-        if config.offline_traindir:
-            directory = config.offline_traindir.format(**vars(config))
+        if config.OFFLINE_TRAINING_DIRECTORY:
+            directory = config.OFFLINE_TRAINING_DIRECTORY.format(**vars(config))
         else:
-            directory = config.traindir
-        train_eps = tools.load_episodes(directory, limit=config.dataset_size)
-        if config.offline_evaldir:
-            directory = config.offline_evaldir.format(**vars(config))
+            directory = config.TRAINING_DIRECTORY
+        train_eps = tools.load_episodes(directory, limit=config.DATASET_SIZE)
+        if config.OFFLINE_EVALUATION_DIRECTORY:
+            directory = config.OFFLINE_EVALUATION_DIRECTORY.format(**vars(config))
         else:
-            directory = config.evaldir
+            directory = config.EVALUATION_DIRECTORY
         eval_eps = tools.load_episodes(directory, limit=1)
 
         def make(mode, id):
             return self.make_env(config, mode, id)
 
-        train_envs = [make("train", i) for i in range(config.envs)]
-        eval_envs = [make("eval", i) for i in range(config.envs)]
+        train_envs = [make("train", i) for i in range(config.ENVIRONMENT_COUNT)]
+        eval_envs = [make("eval", i) for i in range(config.ENVIRONMENT_COUNT)]
 
-        if config.parallel:
+        if config.PARALLEL:
             train_envs = [Parallel(env, "process") for env in train_envs]
             eval_envs = [Parallel(env, "process") for env in eval_envs]
         else:
@@ -124,25 +123,25 @@ class DreamerRacer(Node):
         print("Action Space", acts)
         config.num_actions = acts.n if hasattr(acts, "n") else acts.shape[0]
 
-        if not config.offline_traindir:
+        if not config.OFFLINE_TRAINING_DIRECTORY:
             prefill = max(
                 0,
-                config.prefill
+                config.PREFILL
                 - sum(
                     int(str(n).split("-")[-1][:-4]) - 1
-                    for n in config.traindir.glob("*.npz")
+                    for n in config.TRAINING_DIRECTORY.glob("*.npz")
                 ),
             )
             print(f"Prefill dataset ({prefill} steps).")
             if hasattr(acts, "discrete"):
                 random_actor = tools.OneHotDist(
-                    torch.zeros(config.num_actions).repeat(config.envs, 1)
+                    torch.zeros(config.num_actions).repeat(config.ENVIRONMENT_COUNT, 1)
                 )
             else:
                 random_actor = torchd.independent.Independent(
                     torchd.uniform.Uniform(
-                        torch.tensor(acts.low).repeat(config.envs, 1),
-                        torch.tensor(acts.high).repeat(config.envs, 1),
+                        torch.tensor(acts.low).repeat(config.ENVIRONMENT_COUNT, 1),
+                        torch.tensor(acts.high).repeat(config.ENVIRONMENT_COUNT, 1),
                     ),
                     1,
                 )
@@ -156,12 +155,12 @@ class DreamerRacer(Node):
                 random_agent,
                 train_envs,
                 train_eps,
-                config.traindir,
+                config.TRAINING_DIRECTORY,
                 logger,
-                limit=config.dataset_size,
+                limit=config.DATASET_SIZE,
                 steps=prefill,
             )
-            logger.step += prefill * config.action_repeat
+            logger.step += prefill * config.ACTION_REPEAT
             print(f"Logger: ({logger.step} steps).")
 
         print("Simulate agent.")
@@ -173,7 +172,7 @@ class DreamerRacer(Node):
             config,
             logger,
             train_dataset,
-        ).to(config.device)
+        ).to(config.DEVICE)
         agent.requires_grad_(requires_grad=False)
         if (logdir / "latest.pt").exists():
             checkpoint = torch.load(logdir / "latest.pt")
@@ -183,13 +182,13 @@ class DreamerRacer(Node):
             )
             agent._should_pretrain._once = False
 
-    def make_env(self, config, mode, id):
+    def make_env(self, config: Config, mode, id):
         # port the dreamer environment
         pass
 
-    def make_dataset(self, episodes, config):
-        generator = tools.sample_episodes(episodes, config.batch_length)
-        dataset = tools.from_generator(generator, config.batch_size)
+    def make_dataset(self, episodes, config: Config):
+        generator = tools.sample_episodes(episodes, config.BATCH_LENGTH)
+        dataset = tools.from_generator(generator, config.BATCH_SIZE)
         return dataset
 
     def scan_callback(self, scan_msg: LaserScan):

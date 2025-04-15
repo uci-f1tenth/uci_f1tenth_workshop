@@ -89,7 +89,8 @@ class DreamerRacer(Node):
         config.TRAINING_DIRECTORY.mkdir(parents=True, exist_ok=True)
         config.EVALUATION_DIRECTORY.mkdir(parents=True, exist_ok=True)
         step = sum(
-            int(str(n).split("-")[-1][:-4]) - 1 for n in config.TRAINING_DIRECTORY.glob("*.npz")
+            int(str(n).split("-")[-1][:-4]) - 1
+            for n in config.TRAINING_DIRECTORY.glob("*.npz")
         )
         # step in logger is environmental step
         logger = tools.Logger(logdir, config.ACTION_REPEAT * step)

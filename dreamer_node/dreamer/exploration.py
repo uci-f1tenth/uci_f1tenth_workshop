@@ -55,7 +55,9 @@ class Plan2Explore(nn.Module):
         self._behavior = models.ImagBehavior(config, world_model)
         self.actor = self._behavior.actor
         if config.DYNAMIC_DISCRETE:
-            feat_size = config.DYNAMIC_STOCH * config.DYNAMIC_DISCRETE + config.DYNAMIC_DETER
+            feat_size = (
+                config.DYNAMIC_STOCH * config.DYNAMIC_DISCRETE + config.DYNAMIC_DETER
+            )
             stoch = config.DYNAMIC_STOCH * config.DYNAMIC_DISCRETE
         else:
             feat_size = config.DYNAMIC_STOCH + config.DYNAMIC_DETER
@@ -125,7 +127,9 @@ class Plan2Explore(nn.Module):
             disag = torch.log(disag)
         reward = self._config.EXPLORATION_INTRO_SCALE * disag
         if self._config.EXPLORATION_EXTRA_SCALE:
-            reward += self._config.EXPLORATION_EXTRA_SCALE * self._reward(feat, state, action)
+            reward += self._config.EXPLORATION_EXTRA_SCALE * self._reward(
+                feat, state, action
+            )
         return reward
 
     def _train_ensemble(self, inputs, targets):

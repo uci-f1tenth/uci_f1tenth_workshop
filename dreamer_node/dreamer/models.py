@@ -58,7 +58,9 @@ class WorldModel(nn.Module):
         )
         self.heads = nn.ModuleDict()
         if config.DYNAMIC_DISCRETE:
-            feat_size = config.DYNAMIC_STOCH * config.DYNAMIC_DISCRETE + config.DYNAMIC_DETER
+            feat_size = (
+                config.DYNAMIC_STOCH * config.DYNAMIC_DISCRETE + config.DYNAMIC_DETER
+            )
         else:
             feat_size = config.DYNAMIC_STOCH + config.DYNAMIC_DETER
         self.heads["decoder"] = networks.MultiDecoder(
@@ -223,7 +225,9 @@ class ImagBehavior(nn.Module):
         self._config = config
         self._world_model = world_model
         if config.DYNAMIC_DISCRETE:
-            feat_size = config.DYNAMIC_STOCH * config.DYNAMIC_DISCRETE + config.DYNAMIC_DETER
+            feat_size = (
+                config.DYNAMIC_STOCH * config.DYNAMIC_DISCRETE + config.DYNAMIC_DETER
+            )
         else:
             feat_size = config.DYNAMIC_STOCH + config.DYNAMIC_DETER
         self.actor = networks.MLP(

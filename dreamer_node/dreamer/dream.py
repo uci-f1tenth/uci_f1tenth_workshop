@@ -43,7 +43,9 @@ class Dreamer(nn.Module):
         self._should_train = tools.Every(batch_steps / config.TRAIN_RATIO)
         self._should_pretrain = tools.Once()
         self._should_reset = tools.Every(config.RESET_EVERY)
-        self._should_expl = tools.Until(int(config.EXPLORATION_UNTIL / config.ACTION_REPEAT))
+        self._should_expl = tools.Until(
+            int(config.EXPLORATION_UNTIL / config.ACTION_REPEAT)
+        )
         self._metrics: Dict[str, int | list] = {}
         self._step = logger.step // config.ACTION_REPEAT
         self._update_count = 0
@@ -229,7 +231,9 @@ def main(config: Config):
     config.num_actions = len(acts)
 
     # Dataset initialization (unchanged)
-    train_eps = tools.load_episodes(config.TRAINING_DIRECTORY, limit=config.DATASET_SIZE)
+    train_eps = tools.load_episodes(
+        config.TRAINING_DIRECTORY, limit=config.DATASET_SIZE
+    )
     eval_eps = tools.load_episodes(config.EVALUATION_DIRECTORY, limit=1)
 
     # Prefill with random actions (continuous)

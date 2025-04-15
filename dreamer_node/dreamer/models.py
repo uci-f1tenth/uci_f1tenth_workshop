@@ -1,9 +1,11 @@
 import copy
+
 import torch
 from torch import nn
 
-import networks
-import tools
+import tools  # type: ignore
+import networks  # type: ignore
+from config import Config  # type: ignore
 
 
 def to_np(x):
@@ -29,73 +31,75 @@ class RewardEMA:
 
 
 class WorldModel(nn.Module):
-    def __init__(self, obs_space, act_space, step, config):
+    def __init__(self, obs_space, act_space, step, config: Config):
         super(WorldModel, self).__init__()
         self._step = step
-        self._use_amp = True if config.precision == 16 else False
-        self._config = config
+        self._use_amp = True if config.PRECISION == 16 else False
         shapes = {k: tuple(v.shape) for k, v in obs_space.spaces.items()}
-        self.encoder = networks.MultiEncoder(shapes, **config.encoder)
+        self._config = config
+        self.encoder = networks.MultiEncoder(shapes, **config.ENCODER)
         self.embed_size = self.encoder.outdim
         self.dynamics = networks.RSSM(
-            config.dyn_stoch,
-            config.dyn_deter,
-            config.dyn_hidden,
-            config.dyn_rec_depth,
-            config.dyn_discrete,
-            config.act,
-            config.norm,
-            config.dyn_mean_act,
-            config.dyn_std_act,
-            config.dyn_min_std,
-            config.unimix_ratio,
-            config.initial,
+            config.DYNAMIC_STOCH,
+            config.DYNAMIC_DETER,
+            config.DYNAMIC_HIDDEN,
+            config.DYNAMIC_REC_DEPTH,
+            config.DYNAMIC_DISCRETE,
+            config.ACT,
+            config.NORM,
+            config.DYNAMIC_MEAN_ACT,
+            config.DYNAMIC_STD_ACT,
+            config.DYNAMIC_MIN_STD,
+            config.UNIMIX_RATIO,
+            config.INITIAL,
             config.num_actions,
             self.embed_size,
-            config.device,
+            config.DEVICE,
         )
         self.heads = nn.ModuleDict()
-        if config.dyn_discrete:
-            feat_size = config.dyn_stoch * config.dyn_discrete + config.dyn_deter
+        if config.DYNAMIC_DISCRETE:
+            feat_size = (
+                config.DYNAMIC_STOCH * config.DYNAMIC_DISCRETE + config.DYNAMIC_DETER
+            )
         else:
-            feat_size = config.dyn_stoch + config.dyn_deter
+            feat_size = config.DYNAMIC_STOCH + config.DYNAMIC_DETER
         self.heads["decoder"] = networks.MultiDecoder(
-            feat_size, shapes, **config.decoder
+            feat_size, shapes, **config.DECODER
         )
         self.heads["reward"] = networks.MLP(
             feat_size,
-            (255,) if config.reward_head["dist"] == "symlog_disc" else (),
-            config.reward_head["layers"],
-            config.units,
-            config.act,
-            config.norm,
-            dist=config.reward_head["dist"],
-            outscale=config.reward_head["outscale"],
-            device=config.device,
+            (255,) if config.REWARD_HEAD["dist"] == "symlog_disc" else (),
+            config.REWARD_HEAD["layers"],
+            config.UNITS,
+            config.ACT,
+            config.NORM,
+            dist=config.REWARD_HEAD["dist"],
+            outscale=config.REWARD_HEAD["outscale"],
+            device=config.DEVICE,
             name="Reward",
         )
         self.heads["cont"] = networks.MLP(
             feat_size,
             (),
-            config.cont_head["layers"],
-            config.units,
-            config.act,
-            config.norm,
+            config.CONTINUATION_HEAD["layers"],
+            config.UNITS,
+            config.ACT,
+            config.NORM,
             dist="binary",
-            outscale=config.cont_head["outscale"],
-            device=config.device,
+            outscale=config.CONTINUATION_HEAD["outscale"],
+            device=config.DEVICE,
             name="Cont",
         )
-        for name in config.grad_heads:
+        for name in config.GRAD_HEADS:
             assert name in self.heads, name
         self._model_opt = tools.Optimizer(
             "model",
             self.parameters(),
-            config.model_lr,
-            config.opt_eps,
-            config.grad_clip,
-            config.weight_decay,
-            opt=config.opt,
+            config.MODEL_LR,
+            config.OPT_EPS,
+            config.GRAD_CLIP,
+            config.WEIGHT_DECAY,
+            opt=config.OPT,
             use_amp=self._use_amp,
         )
         print(
@@ -103,8 +107,8 @@ class WorldModel(nn.Module):
         )
         # other losses are scaled by 1.0.
         self._scales = dict(
-            reward=config.reward_head["loss_scale"],
-            cont=config.cont_head["loss_scale"],
+            reward=config.REWARD_HEAD["loss_scale"],
+            cont=config.CONTINUATION_HEAD["loss_scale"],
         )
 
     def _train(self, data):
@@ -120,16 +124,16 @@ class WorldModel(nn.Module):
                 post, prior = self.dynamics.observe(
                     embed, data["action"], data["is_first"]
                 )
-                kl_free = self._config.kl_free
-                dyn_scale = self._config.dyn_scale
-                rep_scale = self._config.rep_scale
+                kl_free = self._config.KL_FREE
+                dyn_scale = self._config.DYNAMIC_SCALE
+                rep_scale = self._config.REP_SCALE
                 kl_loss, kl_value, dyn_loss, rep_loss = self.dynamics.kl_loss(
                     post, prior, kl_free, dyn_scale, rep_scale
                 )
                 assert kl_loss.shape == embed.shape[:2], kl_loss.shape
                 preds = {}
                 for name, head in self.heads.items():
-                    grad_head = name in self._config.grad_heads
+                    grad_head = name in self._config.GRAD_HEADS
                     feat = self.dynamics.get_feat(post)
                     feat = feat if grad_head else feat.detach()
                     pred = head(feat)
@@ -175,12 +179,12 @@ class WorldModel(nn.Module):
     # this function is called during both rollout and training
     def preprocess(self, obs):
         obs = {
-            k: torch.tensor(v, device=self._config.device, dtype=torch.float32)
+            k: torch.tensor(v, device=self._config.DEVICE, dtype=torch.float32)
             for k, v in obs.items()
         }
         obs["image"] = obs["image"] / 255.0
         if "discount" in obs:
-            obs["discount"] *= self._config.discount
+            obs["discount"] *= self._config.DISCOUNT
             # (batch_size, batch_length) -> (batch_size, batch_length, 1)
             obs["discount"] = obs["discount"].unsqueeze(-1)
         # 'is_first' is necesarry to initialize hidden state at training
@@ -215,54 +219,56 @@ class WorldModel(nn.Module):
 
 
 class ImagBehavior(nn.Module):
-    def __init__(self, config, world_model):
+    def __init__(self, config: Config, world_model):
         super(ImagBehavior, self).__init__()
-        self._use_amp = True if config.precision == 16 else False
+        self._use_amp = True if config.PRECISION == 16 else False
         self._config = config
         self._world_model = world_model
-        if config.dyn_discrete:
-            feat_size = config.dyn_stoch * config.dyn_discrete + config.dyn_deter
+        if config.DYNAMIC_DISCRETE:
+            feat_size = (
+                config.DYNAMIC_STOCH * config.DYNAMIC_DISCRETE + config.DYNAMIC_DETER
+            )
         else:
-            feat_size = config.dyn_stoch + config.dyn_deter
+            feat_size = config.DYNAMIC_STOCH + config.DYNAMIC_DETER
         self.actor = networks.MLP(
             feat_size,
             (config.num_actions,),
-            config.actor["layers"],
-            config.units,
-            config.act,
-            config.norm,
-            config.actor["dist"],
-            config.actor["std"],
-            config.actor["min_std"],
-            config.actor["max_std"],
+            config.ACTOR["layers"],
+            config.UNITS,
+            config.ACT,
+            config.NORM,
+            config.ACTOR["dist"],
+            config.ACTOR["std"],
+            config.ACTOR["min_std"],
+            config.ACTOR["max_std"],
             absmax=1.0,
-            temp=config.actor["temp"],
-            unimix_ratio=config.actor["unimix_ratio"],
-            outscale=config.actor["outscale"],
+            temp=config.ACTOR["temp"],
+            unimix_ratio=config.ACTOR["unimix_ratio"],
+            outscale=config.ACTOR["outscale"],
             name="Actor",
         )
         self.value = networks.MLP(
             feat_size,
-            (255,) if config.critic["dist"] == "symlog_disc" else (),
-            config.critic["layers"],
-            config.units,
-            config.act,
-            config.norm,
-            config.critic["dist"],
-            outscale=config.critic["outscale"],
-            device=config.device,
+            (255,) if config.CRITIC["dist"] == "symlog_disc" else (),
+            config.CRITIC["layers"],
+            config.UNITS,
+            config.ACT,
+            config.NORM,
+            config.CRITIC["dist"],
+            outscale=config.CRITIC["outscale"],
+            device=config.DEVICE,
             name="Value",
         )
-        if config.critic["slow_target"]:
+        if config.CRITIC["slow_target"]:
             self._slow_value = copy.deepcopy(self.value)
             self._updates = 0
-        kw = dict(wd=config.weight_decay, opt=config.opt, use_amp=self._use_amp)
+        kw = dict(wd=config.WEIGHT_DECAY, opt=config.OPT, use_amp=self._use_amp)
         self._actor_opt = tools.Optimizer(
             "actor",
             self.actor.parameters(),
-            config.actor["lr"],
-            config.actor["eps"],
-            config.actor["grad_clip"],
+            config.ACTOR["lr"],
+            config.ACTOR["eps"],
+            config.ACTOR["grad_clip"],
             **kw,
         )
         print(
@@ -271,20 +277,20 @@ class ImagBehavior(nn.Module):
         self._value_opt = tools.Optimizer(
             "value",
             self.value.parameters(),
-            config.critic["lr"],
-            config.critic["eps"],
-            config.critic["grad_clip"],
+            config.CRITIC["lr"],
+            config.CRITIC["eps"],
+            config.CRITIC["grad_clip"],
             **kw,
         )
         print(
             f"Optimizer value_opt has {sum(param.numel() for param in self.value.parameters())} variables."
         )
-        if self._config.reward_EMA:
+        if self._config.REWARD_EMA:
             # register ema_vals to nn.Module for enabling torch.save and torch.load
             self.register_buffer(
-                "ema_vals", torch.zeros((2,), device=self._config.device)
+                "ema_vals", torch.zeros((2,), device=self._config.DEVICE)
             )
-            self.reward_ema = RewardEMA(device=self._config.device)
+            self.reward_ema = RewardEMA(device=self._config.DEVICE)
 
     def _train(
         self,
@@ -297,7 +303,7 @@ class ImagBehavior(nn.Module):
         with tools.RequiresGrad(self.actor):
             with torch.cuda.amp.autocast(self._use_amp):
                 imag_feat, imag_state, imag_action = self._imagine(
-                    start, self.actor, self._config.imag_horizon
+                    start, self.actor, self._config.IMAGE_HORIZON
                 )
                 reward = objective(imag_feat, imag_state, imag_action)
                 actor_ent = self.actor(imag_feat).entropy()
@@ -313,7 +319,7 @@ class ImagBehavior(nn.Module):
                     weights,
                     base,
                 )
-                actor_loss -= self._config.actor["entropy"] * actor_ent[:-1, ..., None]
+                actor_loss -= self._config.ACTOR["entropy"] * actor_ent[:-1, ..., None]
                 actor_loss = torch.mean(actor_loss)
                 metrics.update(mets)
                 value_input = imag_feat
@@ -325,7 +331,7 @@ class ImagBehavior(nn.Module):
                 # (time, batch, 1), (time, batch, 1) -> (time, batch)
                 value_loss = -value.log_prob(target.detach())
                 slow_target = self._slow_value(value_input[:-1].detach())
-                if self._config.critic["slow_target"]:
+                if self._config.CRITIC["slow_target"]:
                     value_loss -= value.log_prob(slow_target.mode().detach())
                 # (time, batch, 1), (time, batch, 1) -> (1,)
                 value_loss = torch.mean(weights[:-1] * value_loss[:, :, None])
@@ -333,7 +339,7 @@ class ImagBehavior(nn.Module):
         metrics.update(tools.tensorstats(value.mode(), "value"))
         metrics.update(tools.tensorstats(target, "target"))
         metrics.update(tools.tensorstats(reward, "imag_reward"))
-        if self._config.actor["dist"] in ["onehot"]:
+        if self._config.ACTOR["dist"] in ["onehot"]:
             metrics.update(
                 tools.tensorstats(
                     torch.argmax(imag_action, dim=-1).float(), "imag_action"
@@ -373,16 +379,16 @@ class ImagBehavior(nn.Module):
     def _compute_target(self, imag_feat, imag_state, reward):
         if "cont" in self._world_model.heads:
             inp = self._world_model.dynamics.get_feat(imag_state)
-            discount = self._config.discount * self._world_model.heads["cont"](inp).mean
+            discount = self._config.DISCOUNT * self._world_model.heads["cont"](inp).mean
         else:
-            discount = self._config.discount * torch.ones_like(reward)
+            discount = self._config.DISCOUNT * torch.ones_like(reward)
         value = self.value(imag_feat).mode()
         target = tools.lambda_return(
             reward[1:],
             value[:-1],
             discount[1:],
             bootstrap=value[-1],
-            lambda_=self._config.discount_lambda,
+            lambda_=self._config.DISCOUNT_LAMBDA,
             axis=0,
         )
         weights = torch.cumprod(
@@ -403,7 +409,7 @@ class ImagBehavior(nn.Module):
         policy = self.actor(inp)
         # Q-val for actor is not transformed using symlog
         target = torch.stack(target, dim=1)
-        if self._config.reward_EMA:
+        if self._config.REWARD_EMA:
             offset, scale = self.reward_ema(target, self.ema_vals)
             normed_target = (target - offset) / scale
             normed_base = (base - offset) / scale
@@ -412,30 +418,30 @@ class ImagBehavior(nn.Module):
             metrics["EMA_005"] = to_np(self.ema_vals[0])
             metrics["EMA_095"] = to_np(self.ema_vals[1])
 
-        if self._config.imag_gradient == "dynamics":
+        if self._config.IMAGE_GRADIENT == "dynamics":
             actor_target = adv
-        elif self._config.imag_gradient == "reinforce":
+        elif self._config.IMAGE_GRADIENT == "reinforce":
             actor_target = (
                 policy.log_prob(imag_action)[:-1][:, :, None]
                 * (target - self.value(imag_feat[:-1]).mode()).detach()
             )
-        elif self._config.imag_gradient == "both":
+        elif self._config.IMAGE_GRADIENT == "both":
             actor_target = (
                 policy.log_prob(imag_action)[:-1][:, :, None]
                 * (target - self.value(imag_feat[:-1]).mode()).detach()
             )
-            mix = self._config.imag_gradient_mix
+            mix = self._config.IMAGE_GRADIENT_MIX
             actor_target = mix * target + (1 - mix) * actor_target
             metrics["imag_gradient_mix"] = mix
         else:
-            raise NotImplementedError(self._config.imag_gradient)
+            raise NotImplementedError(self._config.IMAGE_GRADIENT)
         actor_loss = -weights[:-1] * actor_target
         return actor_loss, metrics
 
     def _update_slow_target(self):
-        if self._config.critic["slow_target"]:
-            if self._updates % self._config.critic["slow_target_update"] == 0:
-                mix = self._config.critic["slow_target_fraction"]
+        if self._config.CRITIC["slow_target"]:
+            if self._updates % self._config.CRITIC["slow_target_update"] == 0:
+                mix = self._config.CRITIC["slow_target_fraction"]
                 for s, d in zip(self.value.parameters(), self._slow_value.parameters()):
                     d.data = mix * s.data + (1 - mix) * d.data
             self._updates += 1

@@ -1,6 +1,7 @@
 import gymnasium as gym
 import warnings
 import numpy as np
+from dreamer.racecar_env import Racecar
 
 # Suppress irrelevant third-party warnings for cleaner test output
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -9,10 +10,6 @@ warnings.filterwarnings(
     "ignore",
     message=".*Conversion of an array with ndim > 0 to a scalar is deprecated.*",
 )
-
-
-from racecar_gym.envs import gym_api
-from dreamer.racecar_env import Racecar
 
 
 # using the following to test console: PYTHONPATH=dreamer_node pytest -s dreamer_node/tests/test_racecar_env.py
@@ -28,8 +25,11 @@ def test_reset_keys_and_types():
     assert isinstance(obs, dict)
     assert "image" in obs
     assert obs["image"].dtype == np.uint8
-    assert obs["is_first"].dtype == np.float32 and obs["is_first"][0] == True
-    assert obs["is_last"].dtype == np.float32 and obs["is_last"][0] == False
+    assert obs["is_first"].dtype == np.float32
+    assert obs["is_first"][0]
+
+    assert obs["is_last"].dtype == np.float32
+    assert obs["is_last"][0]
     assert obs["is_terminal"].dtype == np.float32
 
 

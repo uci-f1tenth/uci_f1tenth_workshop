@@ -15,7 +15,7 @@ class Config:
     EVALUATION_EPISODE_NUMBER = 1
     LOG_EVERY = int(1e4)
     RESET_EVERY = 0
-    DEVICE = "cuda:0"
+    DEVICE = "cpu:0"
     COMPILE = True
     PRECISION = 32
     DEBUG = False

@@ -134,9 +134,9 @@ class WorldModel(nn.Module):
                 print(f"post shapes: { {k: v.shape for k, v in post.items()} }")
                 print(f"prior shapes: { {k: v.shape for k, v in prior.items()} }")
 
-                kl_free = self._config.kl_free
-                dyn_scale = self._config.dyn_scale
-                rep_scale = self._config.rep_scale
+                kl_free = self._config.KL_FREE
+                dyn_scale = self._config.DYNAMIC_SCALE
+                rep_scale = self._config.REP_SCALE
                 kl_loss, kl_value, dyn_loss, rep_loss = self.dynamics.kl_loss(
                     post, prior, kl_free, dyn_scale, rep_scale
                 )
@@ -148,7 +148,7 @@ class WorldModel(nn.Module):
                 print(f"feat shape: {feat.shape}")
 
                 for name, head in self.heads.items():
-                    grad_head = name in self._config.grad_heads
+                    grad_head = name in self._config.GRAD_HEADS
                     current_feat = feat if grad_head else feat.detach()
                     pred = head(current_feat)
 

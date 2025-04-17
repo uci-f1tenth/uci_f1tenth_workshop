@@ -251,7 +251,7 @@ class WorldModel(nn.Module):
     #         obs["discount"] = obs["discount"].unsqueeze(-1)
     #     # 'is_first' is necessary to initialize hidden state at training
     #     assert "is_first" in obs
-    #     # 'is_terminal' is necesarry to train cont_head
+    #     # 'is_terminal' is necessary to train cont_head
     #     assert "is_terminal" in obs
     #     obs["cont"] = (1.0 - obs["is_terminal"]).unsqueeze(-1)
     #     return obs

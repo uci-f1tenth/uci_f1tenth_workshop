@@ -154,6 +154,9 @@ def simulate(
     # print("Step limit:", steps)
     # print("Episode limit:", episodes)
     while (steps and step < steps) or (episodes and episode < episodes):
+        print(
+            f"[Simulate] Step {step} | Episode {episode} | Done: {done.any()}"
+        )  # debug print statement for calling
         # reset envs if necessary
         if done.any():
             indices = [index for index, d in enumerate(done) if d]

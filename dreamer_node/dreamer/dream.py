@@ -64,7 +64,7 @@ class Dreamer(nn.Module):
 
     def __call__(self, obs, reset, state=None, training=True):
         step = self._step
-
+        print(f"[Agent] Called at step: {self._step}")  # debug print statement
         if training:
             # Training logic (unchanged core)
             steps = (

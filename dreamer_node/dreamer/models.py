@@ -249,7 +249,7 @@ class WorldModel(nn.Module):
     #         obs["discount"] *= self._config.discount
     #         # (batch_size, batch_length) -> (batch_size, batch_length, 1)
     #         obs["discount"] = obs["discount"].unsqueeze(-1)
-    #     # 'is_first' is necesarry to initialize hidden state at training
+    #     # 'is_first' is necessary to initialize hidden state at training
     #     assert "is_first" in obs
     #     # 'is_terminal' is necesarry to train cont_head
     #     assert "is_terminal" in obs

@@ -1,14 +1,14 @@
+import re
 import math
 import numpy as np
-import re
 
-from config import Config
 import torch
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 from torch import distributions as torchd
 
-import tools
+import tools  # type: ignore
+from config import Config  # type: ignore
 
 config = Config()
 
@@ -620,7 +620,7 @@ class MLP(nn.Module):
         unimix_ratio=0.01,
         outscale=1.0,
         symlog_inputs=False,
-        device=config.device,
+        device=config.DEVICE,
         name="NoName",
     ):
         super(MLP, self).__init__()

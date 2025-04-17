@@ -1,21 +1,24 @@
-import collections
 import io
 import os
 import json
-import pathlib
 import time
 import random
+import collections
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Tuple, cast
 
 import numpy as np
 
-from config import Config
 import torch
 from torch import nn
 from torch.nn import functional as F
 from torch import distributions as torchd
 from torch.utils.tensorboard.writer import SummaryWriter
 
-config = Config
+from config import Config  # type: ignore
+from parallel import Parallel, Damy  # type: ignore
+
+config = Config()
 
 
 def to_np(x):
@@ -57,14 +60,14 @@ class TimeRecording:
 
 
 class Logger:
-    def __init__(self, logdir, step):
+    def __init__(self, logdir, step: int):
         self._logdir = logdir
         self._last_step = None
         self._last_time = None
         self._writer = SummaryWriter(log_dir=str(logdir))
-        self._scalars = {}
-        self._images = {}
-        self._videos = {}
+        self._scalars: dict = {}
+        self._images: dict = {}
+        self._videos: dict = {}
         self.step = step
 
     def scalar(self, name, value):
@@ -128,25 +131,29 @@ class Logger:
 
 
 def simulate(
-    agent,
-    envs,
-    cache,
-    directory,
-    logger,
+    agent: Callable[[Any, Any, Any], Tuple[Dict[str, Any], None]],
+    envs: List[Parallel] | List[Damy],
+    cache: collections.OrderedDict,
+    directory: Path,
+    logger: Logger,
     is_eval=False,
-    limit=None,
+    limit: int | None = None,
     steps=0,
     episodes=0,
-    state=None,
-):
+    state: Tuple[int, int, np.ndarray, float, list, tuple, list] | None = None,
+) -> Tuple[int, int, np.ndarray, float, list, tuple, list]:
+    done: np.ndarray
+    length: np.ndarray | float
+
     # initialize or unpack simulation state
     if state is None:
         step, episode = 0, 0
         done = np.ones(len(envs), bool)
         length = np.zeros(len(envs), np.int32)
-        obs = [None] * len(envs)
+        obs: Dict[Any, np.ndarray] | list = [None] * len(envs)
         agent_state = None
-        reward = [0] * len(envs)
+        reward: List[float] = [0] * len(envs)
+
     else:
         # for thing in state:
         #     print(thing)
@@ -159,8 +166,9 @@ def simulate(
             indices = [index for index, d in enumerate(done) if d]
             results = [envs[i].reset() for i in indices]
             results = [r() for r in results]
+
             for index, (result, _) in zip(indices, results):
-                t = result.copy()
+                t: Dict[str | Any, np.ndarray | float | Any] = result.copy()
                 t = {k: convert(v) for k, v in t.items()}
                 # action will be added to transition in add_to_cache
                 t["reward"] = 0.0
@@ -169,9 +177,12 @@ def simulate(
                 add_to_cache(cache, index, t)
                 # replace obs with done by initial state
                 obs[index] = result
+
         # step agents
         obs = {k: np.stack([o[k] for o in obs]) for k in obs[0] if "log_" not in k}
+        action: Dict[str, Any] | List[Dict[Any, np.ndarray]] | np.ndarray
         action, agent_state = agent(obs, done, agent_state)
+
         if isinstance(action, dict):
             action = [
                 {k: np.array(action[k][i].detach().cpu()) for k in action}
@@ -179,30 +190,34 @@ def simulate(
             ]
         else:
             action = np.array(action)
+
         assert len(action) == len(envs)
         # step envs
         # if is_eval:
         #     print(action)
         results = [e.step(a) for e, a in zip(envs, action)]
         results = [r() for r in results]
-        obs, reward, done = zip(*[p[:3] for p in results])
-        obs = list(obs)
-        reward = list(reward)
-        done = np.stack(done)
+        obs_tuple, reward_tuple, done_tuple = zip(*[p[:3] for p in results])
+        obs = list(obs_tuple)
+        reward = list(reward_tuple)
+        done = np.stack(done_tuple)
         episode += int(done.sum())
         length += 1
         step += len(envs)
         length *= 1 - done
+
         # add to cache
         for index, (a, result, env) in enumerate(zip(action, results, envs)):
             # TODO Make sure that the episode cache is saving the right observation data to match encoder/decoder
             o, r, d, _, info = result
             o = {k: convert(v) for k, v in o.items()}
             transition = o.copy()
+
             if isinstance(a, dict):
                 transition.update(a)
             else:
                 transition["action"] = a
+
             transition["reward"] = r
             transition["discount"] = info.get("discount", np.array(1 - float(d)))
             add_to_cache(cache, index, transition)
@@ -216,6 +231,7 @@ def simulate(
                 length = len(cache[i]["reward"]) - 1
                 score = float(np.array(cache[i]["reward"]).sum())
                 video = cache[i]["image"]
+
                 # record logs given from environments
                 for key in list(cache[i].keys()):
                     if "log_" in key:
@@ -230,11 +246,13 @@ def simulate(
                     logger.scalar("train_length", length)
                     logger.scalar("train_episodes", len(cache))
                     logger.write(step=logger.step)
+
                 else:
                     if "eval_lengths" not in locals():
                         eval_lengths = []
                         eval_scores = []
                         eval_done = False
+
                     # start counting scores for evaluation
                     eval_scores.append(score)
                     eval_lengths.append(length)
@@ -254,14 +272,22 @@ def simulate(
         while len(cache) > 1:
             # FIFO
             cache.popitem(last=False)
-    return (step - steps, episode - episodes, done, length, obs, agent_state, reward)
+
+    output = cast(
+        tuple[
+            int, int, np.ndarray[Any, Any], float, list[Any], tuple[Any, ...], list[Any]
+        ],
+        (step - steps, episode - episodes, done, length, obs, agent_state, reward),
+    )
+    return output
 
 
-def add_to_cache(cache, id, transition):
+def add_to_cache(cache: collections.OrderedDict, id: int, transition: dict):
     if id not in cache:
         cache[id] = dict()
         for key, val in transition.items():
             cache[id][key] = [convert(val)]
+
     else:
         for key, val in transition.items():
             if key not in cache[id]:
@@ -384,7 +410,7 @@ def convert(value, precision=32):
 
 
 def save_episodes(directory, episodes):
-    directory = pathlib.Path(directory).expanduser()
+    directory = Path(directory).expanduser()
     directory.mkdir(parents=True, exist_ok=True)
 
     for fname, episode in episodes.items():
@@ -683,7 +709,7 @@ def sample_episodes(episodes, batch_length, seed=0):
 
 
 def load_episodes(directory, limit=None, reverse=True):
-    directory = pathlib.Path(directory).expanduser()
+    directory = Path(directory).expanduser()
     episodes = collections.OrderedDict()
     total = 0
     if reverse:
@@ -778,7 +804,7 @@ class DiscDist:
         high=20.0,
         transfwd=symlog,
         transbwd=symexp,
-        device=config.device,
+        device=config.DEVICE,
     ):
         self.logits = logits
         self.probs = torch.softmax(logits, -1)

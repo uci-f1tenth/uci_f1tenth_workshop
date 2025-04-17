@@ -2,23 +2,24 @@ import os
 import sys
 import pathlib
 import functools
+from typing import Generator, NoReturn, Any, Dict, Tuple, List
 
 import numpy as np
-from racecar_env import Racecar
-import racecar_gym.envs.gym_api  # noqa: F401
+import gymnasium.spaces
 
 import torch
 from torch import nn
 from torch import distributions as torchd
 
-import tools
-import models
-import exploration as expl
-from parallel import Parallel, Damy
+import tools  # type: ignore
+import models  # type: ignore
+from config import Config  # type: ignore
+import exploration as expl  # type: ignore
+from racecar_env import Racecar  # type: ignore
+from parallel import Parallel, Damy  # type: ignore
 
 sys.path.append(str(pathlib.Path(__file__).parent.parent))
-
-from config import Config
+import racecar_gym.envs.gym_api  # type: ignore # noqa: F401
 
 
 def to_np(x):
@@ -26,18 +27,27 @@ def to_np(x):
 
 
 class Dreamer(nn.Module):
-    def __init__(self, obs_space, act_space, config, logger, dataset):
+    def __init__(
+        self,
+        obs_space: gymnasium.spaces.Dict,
+        act_space: gymnasium.spaces.Dict,
+        config: Config,
+        logger: tools.Logger,
+        dataset: Generator[dict, Any, NoReturn],
+    ):
         super(Dreamer, self).__init__()
         self._config = config
         self._logger = logger
-        self._should_log = tools.Every(config.log_every)
-        batch_steps = config.batch_size * config.batch_length
-        self._should_train = tools.Every(batch_steps / config.train_ratio)
+        self._should_log = tools.Every(config.LOG_EVERY)
+        batch_steps = config.BATCH_SIZE * config.BATCH_LENGTH
+        self._should_train = tools.Every(batch_steps / config.TRAIN_RATIO)
         self._should_pretrain = tools.Once()
-        self._should_reset = tools.Every(config.reset_every)
-        self._should_expl = tools.Until(int(config.expl_until / config.action_repeat))
-        self._metrics = {}
-        self._step = logger.step // config.action_repeat
+        self._should_reset = tools.Every(config.RESET_EVERY)
+        self._should_expl = tools.Until(
+            int(config.EXPLORATION_UNTIL / config.ACTION_REPEAT)
+        )
+        self._metrics: Dict[str, int | list] = {}
+        self._step = logger.step // config.ACTION_REPEAT
         self._update_count = 0
         self._dataset = dataset
 
@@ -48,7 +58,7 @@ class Dreamer(nn.Module):
         self._task_behavior = models.ImagBehavior(config, self._wm)
 
         # Compilation (kept but not F1Tenth-specific)
-        if config.compile and os.name != "nt":
+        if config.COMPILE and os.name != "nt":
             self._wm = torch.compile(self._wm)
             self._task_behavior = torch.compile(self._task_behavior)
 
@@ -56,19 +66,21 @@ class Dreamer(nn.Module):
         def reward(f, s, a):
             return self._wm.heads["reward"](f).mean()
 
-        self._expl_behavior = {
+        self._expl_behavior: nn.Module = {
             "greedy": lambda: self._task_behavior,
             "random": lambda: expl.Random(config, act_space),
             "plan2explore": lambda: expl.Plan2Explore(config, self._wm, reward),
-        }[config.expl_behavior]().to(config.device)
+        }[config.EXPLORATION_BEHAVIOR]().to(config.DEVICE)
 
-    def __call__(self, obs, reset, state=None, training=True):
+    def __call__(
+        self, obs, reset, state=None, training: bool = True
+    ) -> Tuple[dict, Tuple[dict, Any]]:
         step = self._step
 
         if training:
             # Training logic (unchanged core)
             steps = (
-                self._config.pretrain
+                self._config.PRETRAIN
                 if self._should_pretrain()
                 else self._should_train(step)
             )
@@ -93,7 +105,7 @@ class Dreamer(nn.Module):
         policy_output, state = self._policy(obs, state, training)
         if training:
             self._step += len(reset)
-            self._logger.step = self._config.action_repeat * self._step
+            self._logger.step = self._config.ACTION_REPEAT * self._step
 
         return policy_output, state
 
@@ -120,7 +132,7 @@ class Dreamer(nn.Module):
         # print(obs["is_first"])
         latent, _ = self._wm.dynamics.obs_step(latent, action, embed, obs["is_first"])
 
-        if self._config.eval_state_mean:
+        if self._config.EVALUATION_STATE_MEAN:
             latent["stoch"] = latent["mean"]
 
         feat = self._wm.dynamics.get_feat(latent)
@@ -159,7 +171,7 @@ class Dreamer(nn.Module):
 
         metrics.update(self._task_behavior._train(start, reward)[-1])
 
-        if self._config.expl_behavior != "greedy":
+        if self._config.EXPLORATION_BEHAVIOR != "greedy":
             mets = self._expl_behavior.train(start, context, data)[-1]
             metrics.update({"expl_" + key: value for key, value in mets.items()})
 
@@ -171,40 +183,44 @@ def count_steps(folder):
     return sum(int(str(n).split("-")[-1][:-4]) - 1 for n in folder.glob("*.npz"))
 
 
-def make_dataset(episodes, config):
-    generator = tools.sample_episodes(episodes, config.batch_length)
-    dataset = tools.from_generator(generator, config.batch_size)
+def make_dataset(episodes, config: Config):
+    generator = tools.sample_episodes(episodes, config.BATCH_LENGTH)
+    dataset = tools.from_generator(generator, config.BATCH_SIZE)
     return dataset
 
 
-def main(config):
+def main(config: Config):
     # Initializing log directories (unchanged)
-    tools.set_seed_everywhere(config.seed)
-    if config.deterministic_run:
+    tools.set_seed_everywhere(config.SEED)
+    if config.DETERMINISTIC_RUN:
         tools.enable_deterministic_run()
-    logdir = pathlib.Path(config.logdir).expanduser()
-    config.traindir = config.traindir or logdir / "train_eps"
-    config.evaldir = config.evaldir or logdir / "eval_eps"
-    config.steps //= config.action_repeat
-    config.eval_every //= config.action_repeat
-    config.log_every //= config.action_repeat
-    config.time_limit //= config.action_repeat
+    logdir = pathlib.Path(config.LOG_DIRECTORY).expanduser()
+    config.TRAINING_DIRECTORY = config.TRAINING_DIRECTORY or logdir / "train_eps"
+    config.EVALUATION_DIRECTORY = config.EVALUATION_DIRECTORY or logdir / "eval_eps"
+    config.STEPS //= config.ACTION_REPEAT
+    config.EVALUATION_EVERY //= config.ACTION_REPEAT
+    config.LOG_EVERY //= config.ACTION_REPEAT
+    config.TIME_LIMIT //= config.ACTION_REPEAT
 
     # Directory setup (unchanged)
     logdir.mkdir(parents=True, exist_ok=True)
-    config.traindir.mkdir(parents=True, exist_ok=True)
-    config.evaldir.mkdir(parents=True, exist_ok=True)
-    step = count_steps(config.traindir)
-    logger = tools.Logger(logdir, config.action_repeat * step)
+    config.TRAINING_DIRECTORY.mkdir(parents=True, exist_ok=True)
+    config.EVALUATION_DIRECTORY.mkdir(parents=True, exist_ok=True)
+    step = count_steps(config.TRAINING_DIRECTORY)
+    logger = tools.Logger(logdir, config.ACTION_REPEAT * step)
 
     # Environment initialization
     print("Creating F1Tenth environments")
-    train_envs = [Racecar(train=True) for _ in range(config.envs)]
-    eval_envs = [Racecar(train=False) for _ in range(config.envs)]
+    train_envs: List[Racecar] | List[Parallel] | List[Damy] = [
+        Racecar(train=True) for _ in range(config.ENVIRONMENT_COUNT)
+    ]
+    eval_envs: List[Racecar] | List[Parallel] | List[Damy] = [
+        Racecar(train=False) for _ in range(config.ENVIRONMENT_COUNT)
+    ]
     #! train and eval envs set to the same track for now, may want to change later
 
     # Parallel processing setup (unchanged)
-    if config.parallel:
+    if config.PARALLEL:
         train_envs = [Parallel(env, "process") for env in train_envs]
         eval_envs = [Parallel(env, "process") for env in eval_envs]
 
@@ -218,26 +234,31 @@ def main(config):
     config.num_actions = len(acts)
 
     # Dataset initialization (unchanged)
-    train_eps = tools.load_episodes(config.traindir, limit=config.dataset_size)
-    eval_eps = tools.load_episodes(config.evaldir, limit=1)
+    train_eps = tools.load_episodes(
+        config.TRAINING_DIRECTORY, limit=config.DATASET_SIZE
+    )
+    eval_eps = tools.load_episodes(config.EVALUATION_DIRECTORY, limit=1)
 
     # Prefill with random actions (continuous)
     state = None
-    if not config.offline_traindir:
-        prefill = max(0, config.prefill - count_steps(config.traindir))
+    if not config.OFFLINE_TRAINING_DIRECTORY:
+        prefill = max(0, config.PREFILL - count_steps(config.TRAINING_DIRECTORY))
         print(f"Prefill dataset ({prefill} steps)")
+
         # Extract low/high for each action component in the Dict space
-        action_lows = []
-        action_highs = []
+        action_lows: List[torch.Tensor] = []
+        action_highs: List[torch.Tensor] = []
         for key in acts.spaces:
             action_lows.append(torch.tensor(acts[key].low))
             action_highs.append(torch.tensor(acts[key].high))
+
         # Concatenate lows/highs across action components
-        action_low = torch.cat(action_lows).repeat(config.envs, 1)
-        action_high = torch.cat(action_highs).repeat(config.envs, 1)
+        action_low = torch.cat(action_lows).repeat(config.ENVIRONMENT_COUNT, 1)
+        action_high = torch.cat(action_highs).repeat(config.ENVIRONMENT_COUNT, 1)
         random_actor = torchd.independent.Independent(
             torchd.uniform.Uniform(action_low, action_high), 1
         )
+
         # In the simulation lambda, return a dictionary with action keys
         state = tools.simulate(
             lambda o, d, s: (
@@ -249,9 +270,9 @@ def main(config):
             ),
             train_envs,
             train_eps,
-            config.traindir,
+            config.TRAINING_DIRECTORY,
             logger,
-            limit=config.dataset_size,
+            limit=config.DATASET_SIZE,
             steps=prefill,
         )
 
@@ -265,7 +286,7 @@ def main(config):
         config,
         logger,
         train_dataset,
-    ).to(config.device)
+    ).to(config.DEVICE)
 
     # Checkpoint loading (unchanged)
     if (logdir / "latest.pt").exists():
@@ -275,25 +296,25 @@ def main(config):
         agent._should_pretrain._once = False
 
     # Training loop (modified for vector obs)
-    while agent._step < config.steps + config.eval_every:
+    while agent._step < config.STEPS + config.EVALUATION_EVERY:
         # Logging
-        progress_percent = (agent._step / config.steps) * 100
+        progress_percent = (agent._step / config.STEPS) * 100
         print(f"Training progress: {progress_percent:.2f}%")
         logger.scalar("training_progress", progress_percent)
         logger.write(step=agent._step)
 
         # Evaluation phase
-        if config.eval_episode_num > 0:
+        if config.EVALUATION_EPISODE_NUMBER > 0:
             print("Evaluating policy")
             eval_policy = functools.partial(agent, training=False)
             tools.simulate(
                 eval_policy,
                 eval_envs,
                 eval_eps,
-                config.evaldir,
+                config.EVALUATION_DIRECTORY,
                 logger,
                 is_eval=True,
-                episodes=config.eval_episode_num,
+                episodes=config.EVALUATION_EPISODE_NUMBER,
             )
 
         # Training phase
@@ -303,10 +324,10 @@ def main(config):
             agent,
             train_envs,
             train_eps,
-            config.traindir,
+            config.TRAINING_DIRECTORY,
             logger,
-            limit=config.dataset_size,
-            steps=config.eval_every,
+            limit=config.DATASET_SIZE,
+            steps=config.EVALUATION_EVERY,
             state=state,
         )
 

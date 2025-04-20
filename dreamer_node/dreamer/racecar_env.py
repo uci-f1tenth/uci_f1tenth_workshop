@@ -93,7 +93,7 @@ class Racecar:
             "image": np.array(base_obs["hd_camera"], dtype=np.uint8),  # Ensure uint8
             "is_first": np.array([True], dtype=np.float32),
             "is_last": np.array([False], dtype=np.float32),
-            "is_terminal": np.array(False, dtype=np.float32),
+            "is_terminal": np.array([False], dtype=np.float32),
         }
         # Keep all original keys from the base environment
         for k, v in base_obs.items():

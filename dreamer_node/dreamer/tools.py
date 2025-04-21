@@ -426,8 +426,8 @@ def save_episodes(directory, episodes):
         file_path = directory / f"{fname}-{length}.npz"
         processed_episode = {}
 
-        print(f"\nProcessing episode {fname} (length: {length})")
-        print("Initial lengths:", {k: len(episode[k]) for k in valid_keys})
+        # print(f"\nProcessing episode {fname} (length: {length})")
+        # print("Initial lengths:", {k: len(episode[k]) for k in valid_keys})
 
         for key in valid_keys:
             try:
@@ -462,10 +462,10 @@ def save_episodes(directory, episodes):
                         processed_episode[key] = processed_episode[key][:, np.newaxis]
 
                 # Validation print
-                print(f"  {key}:")
-                print(f"    Final shape: {processed_episode[key].shape}")
-                print(f"    Dtype: {processed_episode[key].dtype}")
-                print(f"    Sample values: {processed_episode[key][0]}")
+                # print(f"  {key}:")
+                # print(f"    Final shape: {processed_episode[key].shape}")
+                # print(f"    Dtype: {processed_episode[key].dtype}")
+                # print(f"    Sample values: {processed_episode[key][0]}")
 
             except Exception as e:
                 print(f"\n  Failed processing {key}: {str(e)}")
@@ -692,14 +692,14 @@ def sample_episodes(episodes, batch_length, seed=0):
                     )
 
         # Final validation
-        seq_length = len(next(iter(batch.values())))
-        for k, v in batch.items():
-            if len(v) != seq_length:
-                raise ValueError(f"Length mismatch in {k}: {len(v)} vs {seq_length}")
-            if not isinstance(v, np.ndarray):
-                raise TypeError(f"{k} is {type(v)}, expected numpy array")
-            if v.dtype != np.float32 and v.dtype != np.uint8:
-                v = v.astype(np.float32)
+        # seq_length = len(next(iter(batch.values())))
+        # for k, v in batch.items():
+        #     if len(v) != seq_length:
+        #         raise ValueError(f"Length mismatch in {k}: {len(v)} vs {seq_length}")
+        #     if not isinstance(v, np.ndarray):
+        #         raise TypeError(f"{k} is {type(v)}, expected numpy array")
+        #     if v.dtype != np.float32 and v.dtype != np.uint8:
+        #         v = v.astype(np.float32)
 
         # print("\nFinal batch shapes:")
         # for k, v in batch.items():
@@ -962,8 +962,8 @@ class Bernoulli:
         log_probs0 = -F.softplus(_logits)
         log_probs1 = -F.softplus(-_logits)
 
-        print(f"Processed x shape: {x.shape}")
-        print(f"_logits shape: {_logits.shape}")
+        # print(f"Processed x shape: {x.shape}")
+        # print(f"_logits shape: {_logits.shape}")
 
         return torch.sum(log_probs0 * (1 - x) + log_probs1 * x, -1)
 
@@ -1196,7 +1196,7 @@ def args_type(default):
 
 
 def static_scan(fn, inputs, start):
-    print("\n=== static_scan Debug ===")
+    # print("\n=== static_scan Debug ===")
 
     last = start
     indices = range(inputs[0].shape[0])
@@ -1249,18 +1249,18 @@ def static_scan(fn, inputs, start):
     if isinstance(last, dict):
         outputs = [outputs]
 
-    print("Final outputs:")
-    if isinstance(outputs[0], dict):
-        for k, v in outputs[0].items():
-            print(f"  {k}: {v.shape}")
-    else:
-        for i, out in enumerate(outputs):
-            if isinstance(out, dict):
-                print(f"  Output {i}:")
-                for k, v in out.items():
-                    print(f"    {k}: {v.shape}")
-            else:
-                print(f"  Output {i}: {out.shape}")
+    # print("Final outputs:")
+    # if isinstance(outputs[0], dict):
+    #     for k, v in outputs[0].items():
+    #         print(f"  {k}: {v.shape}")
+    # else:
+    #     for i, out in enumerate(outputs):
+    #         if isinstance(out, dict):
+    #             print(f"  Output {i}:")
+    #             for k, v in out.items():
+    #                 print(f"    {k}: {v.shape}")
+    #         else:
+    #             print(f"  Output {i}: {out.shape}")
 
     return outputs
 

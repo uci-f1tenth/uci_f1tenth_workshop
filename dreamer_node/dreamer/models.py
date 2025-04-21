@@ -242,24 +242,6 @@ class WorldModel(nn.Module):
         post = {k: v.detach() for k, v in post.items()}
         return post, context, metrics
 
-    # this function is called during both rollout and training
-    # def preprocess(self, obs):
-    #     obs = {
-    #         k: torch.tensor(v, device=self._config.device, dtype=torch.float32)
-    #         for k, v in obs.items()
-    #     }
-    #     obs["image"] = obs["image"] / 255.0
-    #     if "discount" in obs:
-    #         obs["discount"] *= self._config.discount
-    #         # (batch_size, batch_length) -> (batch_size, batch_length, 1)
-    #         obs["discount"] = obs["discount"].unsqueeze(-1)
-    #     # 'is_first' is necessary to initialize hidden state at training
-    #     assert "is_first" in obs
-    #     # 'is_terminal' is necessary to train cont_head
-    #     assert "is_terminal" in obs
-    #     obs["cont"] = (1.0 - obs["is_terminal"]).unsqueeze(-1)
-    #     return obs
-
     def preprocess(self, obs):
         # Convert all values to float32 tensors
         obs = {
@@ -292,13 +274,13 @@ class WorldModel(nn.Module):
                 obs["action"] = obs["action"].unsqueeze(1)
 
         # Validate action shape
-        if "action" in obs:
-            assert obs["action"].ndim == 3, (
-                f"Action should be 3D (B,T,D), got {obs['action'].shape}"
-            )
-            assert obs["action"].shape[-1] == 2, (
-                f"Action dim should be 2 (motor+steering), got {obs['action'].shape[-1]}"
-            )
+        # if "action" in obs:
+        #     assert obs["action"].ndim == 3, (
+        #         f"Action should be 3D (B,T,D), got {obs['action'].shape}"
+        #     )
+        #     assert obs["action"].shape[-1] == 2, (
+        #         f"Action dim should be 2 (motor+steering), got {obs['action'].shape[-1]}"
+        #     )
 
         # Required flags
         assert "is_first" in obs, "Missing is_first key"

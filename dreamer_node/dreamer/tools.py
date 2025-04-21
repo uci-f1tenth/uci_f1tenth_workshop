@@ -951,7 +951,6 @@ def args_type(default):
 
 
 def static_scan(fn, inputs, start):
-
     last = start
     indices = range(inputs[0].shape[0])
     flag = True
@@ -1003,7 +1002,7 @@ def static_scan(fn, inputs, start):
 
     if outputs is None:
         raise RuntimeError("No outputs generated - empty inputs or failed processing")
-    
+
     if isinstance(last, dict):
         outputs = [outputs]
 

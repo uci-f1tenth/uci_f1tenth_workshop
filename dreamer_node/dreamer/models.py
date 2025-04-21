@@ -120,7 +120,7 @@ class WorldModel(nn.Module):
         #     print(f"{key}: {value.shape if hasattr(value, 'shape') else value}")
 
         with tools.RequiresGrad(self):
-            with torch.amp.autocast(device_type='cuda', enabled=self._use_amp):
+            with torch.amp.autocast(device_type="cuda", enabled=self._use_amp):
                 embed = self.encoder(data)
                 # Debug 2: Check encoder output
                 # print("\n=== Encoder Output ===")
@@ -226,7 +226,7 @@ class WorldModel(nn.Module):
         metrics["dyn_loss"] = to_np(dyn_loss)
         metrics["rep_loss"] = to_np(rep_loss)
         metrics["kl"] = to_np(torch.mean(kl_value))
-        with torch.amp.autocast(device_type='cuda', enabled=self._use_amp):
+        with torch.amp.autocast(device_type="cuda", enabled=self._use_amp):
             metrics["prior_ent"] = to_np(
                 torch.mean(self.dynamics.get_dist(prior).entropy())
             )
@@ -398,7 +398,7 @@ class ImagBehavior(nn.Module):
         metrics = {}
 
         with tools.RequiresGrad(self.actor):
-            with torch.amp.autocast(device_type='cuda', enabled=self._use_amp):
+            with torch.amp.autocast(device_type="cuda", enabled=self._use_amp):
                 imag_feat, imag_state, imag_action = self._imagine(
                     start, self.actor, self._config.IMAGE_HORIZON
                 )
@@ -422,7 +422,7 @@ class ImagBehavior(nn.Module):
                 value_input = imag_feat
 
         with tools.RequiresGrad(self.value):
-            with torch.amp.autocast(device_type='cuda', enabled=self._use_amp):
+            with torch.amp.autocast(device_type="cuda", enabled=self._use_amp):
                 value = self.value(value_input[:-1].detach())
                 target = torch.stack(target, dim=1)
                 # (time, batch, 1), (time, batch, 1) -> (time, batch)

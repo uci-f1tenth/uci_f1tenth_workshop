@@ -38,6 +38,7 @@ class Dreamer(nn.Module):
         super(Dreamer, self).__init__()
         self._config = config
         self._logger = logger
+        print(f'logger initialized to {logger}')
         self._should_log = tools.Every(config.LOG_EVERY)
         batch_steps = config.BATCH_SIZE * config.BATCH_LENGTH
         self._should_train = tools.Every(batch_steps / config.TRAIN_RATIO)

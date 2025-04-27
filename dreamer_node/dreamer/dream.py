@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 import pathlib
@@ -348,8 +349,6 @@ def main(config: Config):
 
 
 if __name__ == "__main__":
-    import argparse
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--device",

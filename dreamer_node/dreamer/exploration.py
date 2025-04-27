@@ -133,7 +133,7 @@ class Plan2Explore(nn.Module):
         return reward
 
     def _train_ensemble(self, inputs, targets):
-        with torch.cuda.amp.autocast(self._use_amp):
+        with torch.amp.autocast(device_type="cuda", enabled=self._use_amp):
             if self._config.DISAGREE_OFFSET:
                 targets = targets[:, self._config.DISAGREE_OFFSET :]
                 inputs = inputs[:, : -self._config.DISAGREE_OFFSET]

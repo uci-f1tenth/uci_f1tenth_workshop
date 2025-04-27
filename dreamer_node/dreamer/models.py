@@ -115,24 +115,24 @@ class WorldModel(nn.Module):
         data = self.preprocess(data)
 
         # Debug 1: Check initial data shapes
-        print("\n=== Data Shapes ===")
-        for key, value in data.items():
-            print(f"{key}: {value.shape if hasattr(value, 'shape') else value}")
+        # print("\n=== Data Shapes ===")
+        # for key, value in data.items():
+        #     print(f"{key}: {value.shape if hasattr(value, 'shape') else value}")
 
         with tools.RequiresGrad(self):
-            with torch.cuda.amp.autocast(self._use_amp):
+            with torch.amp.autocast(device_type="cuda", enabled=self._use_amp):
                 embed = self.encoder(data)
                 # Debug 2: Check encoder output
-                print("\n=== Encoder Output ===")
-                print(f"embed shape: {embed.shape}")
+                # print("\n=== Encoder Output ===")
+                # print(f"embed shape: {embed.shape}")
 
                 post, prior = self.dynamics.observe(
                     embed, data["action"], data["is_first"]
                 )
                 # Debug 3: Check dynamics outputs
-                print("\n=== Dynamics Outputs ===")
-                print(f"post shapes: { {k: v.shape for k, v in post.items()} }")
-                print(f"prior shapes: { {k: v.shape for k, v in prior.items()} }")
+                # print("\n=== Dynamics Outputs ===")
+                # print(f"post shapes: { {k: v.shape for k, v in post.items()} }")
+                # print(f"prior shapes: { {k: v.shape for k, v in prior.items()} }")
 
                 kl_free = self._config.KL_FREE
                 dyn_scale = self._config.DYNAMIC_SCALE
@@ -144,8 +144,8 @@ class WorldModel(nn.Module):
                 preds = {}
                 feat = self.dynamics.get_feat(post)
                 # Debug 4: Check features
-                print("\n=== Feature Vector ===")
-                print(f"feat shape: {feat.shape}")
+                # print("\n=== Feature Vector ===")
+                # print(f"feat shape: {feat.shape}")
 
                 for name, head in self.heads.items():
                     grad_head = name in self._config.GRAD_HEADS
@@ -153,24 +153,24 @@ class WorldModel(nn.Module):
                     pred = head(current_feat)
 
                     # Debug 5: Check prediction outputs
-                    print(f"\n=== Prediction Head '{name}' ===")
-                    if isinstance(pred, dict):
-                        for k, v in pred.items():
-                            if hasattr(v, "shape"):
-                                print(f"{k} shape: {v.shape}")
-                            else:
-                                print(f"{k} is distribution with params:")
-                                for param in v.__dict__:
-                                    if isinstance(v.__dict__[param], torch.Tensor):
-                                        print(f"  {param}: {v.__dict__[param].shape}")
-                    else:
-                        if hasattr(pred, "shape"):
-                            print(f"pred shape: {pred.shape}")
-                        else:
-                            print("pred is distribution with parameters:")
-                            for param in pred.__dict__:
-                                if isinstance(pred.__dict__[param], torch.Tensor):
-                                    print(f"  {param}: {pred.__dict__[param].shape}")
+                    # print(f"\n=== Prediction Head '{name}' ===")
+                    # if isinstance(pred, dict):
+                    #     for k, v in pred.items():
+                    #         if hasattr(v, "shape"):
+                    #             print(f"{k} shape: {v.shape}")
+                    #         else:
+                    #             print(f"{k} is distribution with params:")
+                    #             for param in v.__dict__:
+                    #                 if isinstance(v.__dict__[param], torch.Tensor):
+                    #                     print(f"  {param}: {v.__dict__[param].shape}")
+                    # else:
+                    #     if hasattr(pred, "shape"):
+                    #         print(f"pred shape: {pred.shape}")
+                    #     else:
+                    #         print("pred is distribution with parameters:")
+                    #         for param in pred.__dict__:
+                    #             if isinstance(pred.__dict__[param], torch.Tensor):
+                    #                 print(f"  {param}: {pred.__dict__[param].shape}")
 
                     if type(pred) is dict:
                         preds.update(pred)
@@ -180,35 +180,35 @@ class WorldModel(nn.Module):
                 losses = {}
                 for name, pred in preds.items():
                     # Debug 6: Final check before log_prob
-                    print(f"\n=== Calculating Loss for '{name}' ===")
+                    # print(f"\n=== Calculating Loss for '{name}' ===")
 
                     # Handle distribution objects properly
-                    if hasattr(
-                        pred, "base_dist"
-                    ):  # For Independent/Normal distributions
-                        print("Prediction Distribution Parameters:")
-                        if hasattr(pred.base_dist, "mean"):
-                            print(f"  mean shape: {pred.base_dist.mean.shape}")
-                        if hasattr(pred.base_dist, "logits"):
-                            print(f"  logits shape: {pred.base_dist.logits.shape}")
-                        if hasattr(pred, "event_shape"):
-                            print(f"  event_shape: {pred.event_shape}")
-                    elif hasattr(pred, "logits"):  # For Discrete distributions
-                        print(f"  logits shape: {pred.logits.shape}")
+                    # if hasattr(
+                    #     pred, "base_dist"
+                    # ):  # For Independent/Normal distributions
+                    #     print("Prediction Distribution Parameters:")
+                    #     if hasattr(pred.base_dist, "mean"):
+                    #         print(f"  mean shape: {pred.base_dist.mean.shape}")
+                    #     if hasattr(pred.base_dist, "logits"):
+                    #         print(f"  logits shape: {pred.base_dist.logits.shape}")
+                    #     if hasattr(pred, "event_shape"):
+                    #         print(f"  event_shape: {pred.event_shape}")
+                    # elif hasattr(pred, "logits"):  # For Discrete distributions
+                    #     print(f"  logits shape: {pred.logits.shape}")
 
-                    # Print target data info
-                    print(f"Target '{name}' shape: {data[name].shape}")
-                    print(f"Target dtype: {data[name].dtype}")
+                    # # Print target data info
+                    # print(f"Target '{name}' shape: {data[name].shape}")
+                    # print(f"Target dtype: {data[name].dtype}")
 
-                    # For debugging only - remove after use
-                    if name == "decoder":
-                        print("\nDEBUG - First 5 lidar targets:")
-                        print(data["lidar"][0, 0, :5].cpu().numpy())
-                        if hasattr(pred, "base_dist") and hasattr(
-                            pred.base_dist, "mean"
-                        ):
-                            print("First 5 predicted means:")
-                            print(pred.base_dist.mean[0, 0, :5].cpu().numpy())
+                    # # For debugging only - remove after use
+                    # if name == "decoder":
+                    #     print("\nDEBUG - First 5 lidar targets:")
+                    #     print(data["lidar"][0, 0, :5].cpu().numpy())
+                    #     if hasattr(pred, "base_dist") and hasattr(
+                    #         pred.base_dist, "mean"
+                    #     ):
+                    #         print("First 5 predicted means:")
+                    #         print(pred.base_dist.mean[0, 0, :5].cpu().numpy())
                     loss = -pred.log_prob(data[name])
                     assert loss.shape == embed.shape[:2], (name, loss.shape)
                     losses[name] = loss
@@ -226,7 +226,7 @@ class WorldModel(nn.Module):
         metrics["dyn_loss"] = to_np(dyn_loss)
         metrics["rep_loss"] = to_np(rep_loss)
         metrics["kl"] = to_np(torch.mean(kl_value))
-        with torch.cuda.amp.autocast(self._use_amp):
+        with torch.amp.autocast(device_type="cuda", enabled=self._use_amp):
             metrics["prior_ent"] = to_np(
                 torch.mean(self.dynamics.get_dist(prior).entropy())
             )
@@ -241,24 +241,6 @@ class WorldModel(nn.Module):
             )
         post = {k: v.detach() for k, v in post.items()}
         return post, context, metrics
-
-    # this function is called during both rollout and training
-    # def preprocess(self, obs):
-    #     obs = {
-    #         k: torch.tensor(v, device=self._config.device, dtype=torch.float32)
-    #         for k, v in obs.items()
-    #     }
-    #     obs["image"] = obs["image"] / 255.0
-    #     if "discount" in obs:
-    #         obs["discount"] *= self._config.discount
-    #         # (batch_size, batch_length) -> (batch_size, batch_length, 1)
-    #         obs["discount"] = obs["discount"].unsqueeze(-1)
-    #     # 'is_first' is necessary to initialize hidden state at training
-    #     assert "is_first" in obs
-    #     # 'is_terminal' is necessary to train cont_head
-    #     assert "is_terminal" in obs
-    #     obs["cont"] = (1.0 - obs["is_terminal"]).unsqueeze(-1)
-    #     return obs
 
     def preprocess(self, obs):
         # Convert all values to float32 tensors
@@ -292,13 +274,13 @@ class WorldModel(nn.Module):
                 obs["action"] = obs["action"].unsqueeze(1)
 
         # Validate action shape
-        if "action" in obs:
-            assert obs["action"].ndim == 3, (
-                f"Action should be 3D (B,T,D), got {obs['action'].shape}"
-            )
-            assert obs["action"].shape[-1] == 2, (
-                f"Action dim should be 2 (motor+steering), got {obs['action'].shape[-1]}"
-            )
+        # if "action" in obs:
+        #     assert obs["action"].ndim == 3, (
+        #         f"Action should be 3D (B,T,D), got {obs['action'].shape}"
+        #     )
+        #     assert obs["action"].shape[-1] == 2, (
+        #         f"Action dim should be 2 (motor+steering), got {obs['action'].shape[-1]}"
+        #     )
 
         # Required flags
         assert "is_first" in obs, "Missing is_first key"
@@ -416,7 +398,7 @@ class ImagBehavior(nn.Module):
         metrics = {}
 
         with tools.RequiresGrad(self.actor):
-            with torch.cuda.amp.autocast(self._use_amp):
+            with torch.amp.autocast(device_type="cuda", enabled=self._use_amp):
                 imag_feat, imag_state, imag_action = self._imagine(
                     start, self.actor, self._config.IMAGE_HORIZON
                 )
@@ -440,7 +422,7 @@ class ImagBehavior(nn.Module):
                 value_input = imag_feat
 
         with tools.RequiresGrad(self.value):
-            with torch.cuda.amp.autocast(self._use_amp):
+            with torch.amp.autocast(device_type="cuda", enabled=self._use_amp):
                 value = self.value(value_input[:-1].detach())
                 target = torch.stack(target, dim=1)
                 # (time, batch, 1), (time, batch, 1) -> (time, batch)

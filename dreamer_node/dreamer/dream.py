@@ -215,7 +215,7 @@ def main(config: Config):
         Racecar(train=True, visualize=True) for _ in range(config.ENVIRONMENT_COUNT)
     ]
     eval_envs: List[Racecar] | List[Parallel] | List[Damy] = [
-        Racecar(train=False, visualize=True) for _ in range(config.ENVIRONMENT_COUNT)
+        Racecar(train=False, visualize=False) for _ in range(config.ENVIRONMENT_COUNT)
     ]
     #! train and eval envs set to the same track for now, may want to change later
 

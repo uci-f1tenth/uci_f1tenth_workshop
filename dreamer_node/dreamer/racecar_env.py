@@ -6,7 +6,7 @@ import numpy as np
 class Racecar:
     metadata: dict = {}
 
-    def __init__(self, train):
+    def __init__(self, train, visualize: bool = False):
         # TODO: Figure out how to make render_mode='human' if train env so we can actually see what is happening
         if train:
             self._env = gymnasium.make(
@@ -22,6 +22,18 @@ class Racecar:
                 render_mode="rgb_array_follow",  # optional
                 render_options=dict(width=320, height=240, agent="A"),  # optional
             )
+
+        if visualize:
+            mode = "human"
+        else:
+            mode = "rgb_array_follow"
+        self._env = gymnasium.make(
+            id="SingleAgentRaceEnv-v0",
+            scenario="gyms/racecar_gym/scenarios/austria.yml",
+            render_mode=mode,
+            render_options=dict(width=320, height=240, agent="A"),  # optional
+        )
+
         self.reward_range = [-np.inf, np.inf]
 
         # Impose 100 step limit on environment until debugging is done

@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 import pathlib
@@ -209,13 +210,19 @@ def main(config: Config):
     step = count_steps(config.TRAINING_DIRECTORY)
     logger = tools.Logger(logdir, config.ACTION_REPEAT * step)
 
+    # GUI initialization
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--gui", action="store_true", help="Enable PyBullet GUI")
+    args = parser.parse_args()
+
     # Environment initialization
     print("Creating F1Tenth environments")
     train_envs: List[Racecar] | List[Parallel] | List[Damy] = [
-        Racecar(train=True, visualize=True) for _ in range(config.ENVIRONMENT_COUNT)
+        Racecar(train=True, visualize=args.gui) for _ in range(config.ENVIRONMENT_COUNT)
     ]
     eval_envs: List[Racecar] | List[Parallel] | List[Damy] = [
-        Racecar(train=False, visualize=False) for _ in range(config.ENVIRONMENT_COUNT)
+        Racecar(train=False, visualize=args.gui)
+        for _ in range(config.ENVIRONMENT_COUNT)
     ]
     #! train and eval envs set to the same track for now, may want to change later
 

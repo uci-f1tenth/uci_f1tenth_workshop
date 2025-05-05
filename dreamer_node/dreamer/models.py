@@ -114,6 +114,9 @@ class WorldModel(nn.Module):
     def _train(self, data):
         data = self.preprocess(data)
 
+        print("\n=== Steps ===")
+        print(self._step)
+
         # Debug 1: Check initial data shapes
         print("\n=== Data Shapes ===")
         for key, value in data.items():

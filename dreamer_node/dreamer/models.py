@@ -115,16 +115,16 @@ class WorldModel(nn.Module):
         data = self.preprocess(data)
 
         # Debug 1: Check initial data shapes
-        # print("\n=== Data Shapes ===")
-        # for key, value in data.items():
-        #     print(f"{key}: {value.shape if hasattr(value, 'shape') else value}")
+        print("\n=== Data Shapes ===")
+        for key, value in data.items():
+            print(f"{key}: {value.shape if hasattr(value, 'shape') else value}")
 
         with tools.RequiresGrad(self):
             with torch.amp.autocast(device_type="cuda", enabled=self._use_amp):
                 embed = self.encoder(data)
                 # Debug 2: Check encoder output
-                # print("\n=== Encoder Output ===")
-                # print(f"embed shape: {embed.shape}")
+                print("\n=== Encoder Output ===")
+                print(f"embed shape: {embed.shape}")
 
                 post, prior = self.dynamics.observe(
                     embed, data["action"], data["is_first"]

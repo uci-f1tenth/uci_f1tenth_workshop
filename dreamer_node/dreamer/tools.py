@@ -5,18 +5,21 @@ import time
 import random
 import collections
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Tuple, cast
+from typing import Any, Dict, List, Tuple, cast, TYPE_CHECKING
 
-import numpy as np
+import numpy as np # type: ignore
 
-import torch
-from torch import nn
-from torch.nn import functional as F
-from torch import distributions as torchd
-from torch.utils.tensorboard.writer import SummaryWriter
+import torch # type: ignore
+from torch import nn # type: ignore
+from torch.nn import functional as F # type: ignore
+from torch import distributions as torchd # type: ignore
+from torch.utils.tensorboard.writer import SummaryWriter # type: ignore
 
 from config import Config  # type: ignore
 from parallel import Parallel, Damy  # type: ignore
+
+if TYPE_CHECKING:
+    from dreamer import Dreamer  # type: ignore
 
 config = Config()
 
@@ -131,7 +134,7 @@ class Logger:
 
 
 def simulate(
-    agent: Callable[[Any, Any, Any], Tuple[Dict[str, Any], None]],
+    agent: "Dreamer",
     envs: List[Parallel] | List[Damy],
     cache: collections.OrderedDict,
     directory: Path,
@@ -150,7 +153,7 @@ def simulate(
         step, episode = 0, 0
         done = np.ones(len(envs), bool)
         length = np.zeros(len(envs), np.int32)
-        obs: Dict[Any, np.ndarray] | list = [None] * len(envs)
+        obs = [None] * len(envs)
         agent_state = None
         reward: List[float] = [0] * len(envs)
 

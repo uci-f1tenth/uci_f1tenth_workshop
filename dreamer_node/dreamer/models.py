@@ -1,7 +1,7 @@
 import copy
 
-import torch
-from torch import nn
+import torch # type: ignore
+from torch import nn # type: ignore
 
 import tools  # type: ignore
 import networks  # type: ignore
@@ -111,7 +111,7 @@ class WorldModel(nn.Module):
             cont=config.CONTINUATION_HEAD["loss_scale"],
         )
 
-    def _train(self, data):
+    def _train(self, data: dict):
         data = self.preprocess(data)
 
         # Debug 1: Check initial data shapes

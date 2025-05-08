@@ -1,6 +1,6 @@
 # Wrapper function allowing for racecar_gym env to be passed into Dreamer V3
-import gymnasium
-import numpy as np
+import gymnasium # type: ignore
+import numpy as np # type: ignore
 
 
 class Racecar:

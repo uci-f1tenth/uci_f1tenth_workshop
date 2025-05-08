@@ -4,12 +4,12 @@ import pathlib
 import functools
 from typing import Generator, NoReturn, Any, Dict, Tuple, List
 
-import numpy as np
-import gymnasium.spaces
+import numpy as np # type: ignore
+import gymnasium.spaces # type: ignore
 
-import torch
-from torch import nn
-from torch import distributions as torchd
+import torch # type: ignore
+from torch import nn # type: ignore
+from torch import distributions as torchd # type: ignore
 
 import tools  # type: ignore
 import models  # type: ignore
@@ -73,7 +73,11 @@ class Dreamer(nn.Module):
         }[config.EXPLORATION_BEHAVIOR]().to(config.DEVICE)
 
     def __call__(
-        self, obs, reset, state=None, training: bool = True
+        self,
+        obs: Dict[Any, np.ndarray],
+        reset: np.ndarray,
+        agent_state=None,
+        training: bool = True
     ) -> Tuple[dict, Tuple[dict, Any]]:
         step = self._step
 
@@ -102,12 +106,12 @@ class Dreamer(nn.Module):
                 self._logger.write(fps=True)
 
         # Policy execution (continuous actions only)
-        policy_output, state = self._policy(obs, state, training)
+        policy_output, agent_state = self._policy(obs, agent_state, training)
         if training:
             self._step += len(reset)
             self._logger.step = self._config.ACTION_REPEAT * self._step
 
-        return policy_output, state
+        return policy_output, agent_state
 
     def _policy(self, obs, state, training):
         # Simplified for continuous control
@@ -159,7 +163,7 @@ class Dreamer(nn.Module):
         state = (latent, action)
         return policy_output, state
 
-    def _train(self, data):
+    def _train(self, data: dict):
         # Core training remains unchanged
         metrics = {}
         post, context, mets = self._wm._train(data)
@@ -211,12 +215,8 @@ def main(config: Config):
 
     # Environment initialization
     print("Creating F1Tenth environments")
-    train_envs: List[Racecar] | List[Parallel] | List[Damy] = [
-        Racecar(train=True, visualize=True) for _ in range(config.ENVIRONMENT_COUNT)
-    ]
-    eval_envs: List[Racecar] | List[Parallel] | List[Damy] = [
-        Racecar(train=False, visualize=False) for _ in range(config.ENVIRONMENT_COUNT)
-    ]
+    train_envs = [Racecar(train=True, visualize=True) for _ in range(config.ENVIRONMENT_COUNT)]
+    eval_envs = [Racecar(train=False, visualize=False) for _ in range(config.ENVIRONMENT_COUNT)]
     #! train and eval envs set to the same track for now, may want to change later
 
     # Parallel processing setup (unchanged)
@@ -234,9 +234,7 @@ def main(config: Config):
     config.num_actions = len(acts)
 
     # Dataset initialization (unchanged)
-    train_eps = tools.load_episodes(
-        config.TRAINING_DIRECTORY, limit=config.DATASET_SIZE
-    )
+    train_eps = tools.load_episodes(config.TRAINING_DIRECTORY, limit=config.DATASET_SIZE)
     eval_eps = tools.load_episodes(config.EVALUATION_DIRECTORY, limit=1)
 
     # Prefill with random actions (continuous)
@@ -280,7 +278,7 @@ def main(config: Config):
     print("Initializing Dreamer agent")
     train_dataset = make_dataset(train_eps, config)
     # eval_dataset = make_dataset(eval_eps, config)
-    agent = Dreamer(
+    agent: Dreamer = Dreamer(
         train_envs[0].observation_space,
         train_envs[0].action_space,
         config,
@@ -304,7 +302,7 @@ def main(config: Config):
         logger.write(step=agent._step)
 
         # Evaluation phase
-        if config.EVALUATION_EPISODE_NUMBER > 0:
+        if 0 < config.EVALUATION_EPISODE_NUMBER:
             print("Evaluating policy")
             eval_policy = functools.partial(agent, training=False)
             tools.simulate(
@@ -350,5 +348,4 @@ def main(config: Config):
 
 
 if __name__ == "__main__":
-    config = Config()
-    main(config)
+    main(Config())

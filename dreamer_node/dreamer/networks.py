@@ -1,11 +1,11 @@
 import re
 import math
-import numpy as np
+import numpy as np # type: ignore
 
-import torch
-import torch.nn.functional as F
-from torch import nn
-from torch import distributions as torchd
+import torch # type: ignore
+import torch.nn.functional as F # type: ignore
+from torch import nn # type: ignore
+from torch import distributions as torchd # type: ignore
 
 import tools  # type: ignore
 from config import Config  # type: ignore

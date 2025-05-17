@@ -6,7 +6,7 @@ import numpy as np
 class Racecar:
     metadata: dict = {}
 
-    def __init__(self, train):
+    def __init__(self, train, visualize: bool = False):
         # TODO: Figure out how to make render_mode='human' if train env so we can actually see what is happening
         if train:
             self._env = gymnasium.make(
@@ -22,7 +22,24 @@ class Racecar:
                 render_mode="rgb_array_follow",  # optional
                 render_options=dict(width=320, height=240, agent="A"),  # optional
             )
+
+        if visualize:
+            mode = "human"
+        else:
+            mode = "rgb_array_follow"
+        self._env = gymnasium.make(
+            id="SingleAgentRaceEnv-v0",
+            scenario="gyms/racecar_gym/scenarios/austria.yml",
+            render_mode=mode,
+            render_options=dict(width=320, height=240, agent="A"),  # optional
+        )
+
         self.reward_range = [-np.inf, np.inf]
+
+        # Impose 100 step limit on environment until debugging is done
+        self.steps_taken = 0
+        self.step_limit = 100
+        self.train = train
 
     @property
     def observation_space(self):
@@ -58,6 +75,11 @@ class Racecar:
             racecar_action = action
         base_obs, reward, done, truncated, info = self._env.step(racecar_action)
 
+        self.steps_taken += 1
+        if not self.train and self.steps_taken >= 100:
+            truncated = True
+            done = True
+
         obs = {
             "image": np.array(base_obs["hd_camera"], dtype=np.uint8),  # Ensure uint8
             "is_first": np.array([False], dtype=np.float32),
@@ -77,12 +99,13 @@ class Racecar:
 
     def reset(self, seed=None, options=None):
         base_obs, info = self._env.reset(seed=seed, options=options)
+        self.steps_taken = 0
 
         obs = {
             "image": np.array(base_obs["hd_camera"], dtype=np.uint8),  # Ensure uint8
             "is_first": np.array([True], dtype=np.float32),
             "is_last": np.array([False], dtype=np.float32),
-            "is_terminal": np.array(False, dtype=np.float32),
+            "is_terminal": np.array([False], dtype=np.float32),
         }
         # Keep all original keys from the base environment
         for k, v in base_obs.items():

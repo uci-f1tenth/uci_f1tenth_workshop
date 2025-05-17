@@ -155,8 +155,11 @@ def simulate(
         reward: List[float] = [0] * len(envs)
 
     else:
+        # for thing in state:
+        #     print(thing)
         step, episode, done, length, obs, agent_state, reward = state
-
+    # print("Step limit:", steps)
+    # print("Episode limit:", episodes)
     while (steps and step < steps) or (episodes and episode < episodes):
         # reset envs if necessary
         if done.any():
@@ -224,6 +227,7 @@ def simulate(
             # logging for done episode
             for i in indices:
                 save_episodes(directory, {i: cache[i]})
+                print("Saved the episode")
                 length = len(cache[i]["reward"]) - 1
                 score = float(np.array(cache[i]["reward"]).sum())
                 video = cache[i]["image"]
@@ -323,86 +327,98 @@ def convert(value, precision=32):
 
 
 def save_episodes(directory, episodes):
-    """directory = Path(directory).expanduser()
-    directory.mkdir(parents=True, exist_ok=True)
-    for filename, episode in episodes.items():
-        length = len(episode["reward"])
-        filename = directory / f"{filename}-{length}.npz"
-        with io.BytesIO() as f1:
-            np.savez_compressed(f1, **episode)
-            f1.seek(0)
-            with filename.open("wb") as f2:
-                f2.write(f1.read())
-    return True"""
     directory = Path(directory).expanduser()
     directory.mkdir(parents=True, exist_ok=True)
 
     for fname, episode in episodes.items():
-        length = len(episode["reward"])
+        # 1. Find minimum valid length across all non-log keys
+        valid_keys = [k for k in episode.keys() if "log_" not in k]
+        lengths = [len(episode[k]) for k in valid_keys]
+        length = min(lengths) if lengths else 0
+
+        if length < 1:
+            print(f"Skipping empty episode {fname}")
+            continue
+
         file_path = directory / f"{fname}-{length}.npz"
-
         processed_episode = {}
-        for key, value in episode.items():
-            # If value is a list and its elements are NumPy arrays, try to stack them.
-            if isinstance(value, list) and all(
-                isinstance(elem, np.ndarray) for elem in value
-            ):
-                # print(f"Attempting to stack key '{key}' with {len(value)} elements.")
-                try:
-                    # Check shapes of each array before stacking
-                    # shapes = [v.shape for v in value]
-                    # print(f"Shapes for '{key}': {shapes}")
 
-                    # Try to stack assuming all arrays are the same shape.
-                    processed_episode[key] = np.stack(value)
-                except Exception as e:
-                    print(f"Could not stack key '{key}': {e}")
-                    # If stacking fails, convert each element.
-                    processed_episode[key] = np.array(
-                        [elem.item() if elem.size == 1 else elem for elem in value]
-                    )
-            else:
-                # Otherwise, attempt a direct conversion.
-                try:
-                    processed_episode[key] = np.array(value)
-                except Exception as e:
-                    print(f"Could not convert key '{key}' to array: {e}")
-                    processed_episode[key] = value  # fallback if needed
+        # print(f"\nProcessing episode {fname} (length: {length})")
+        # print("Initial lengths:", {k: len(episode[k]) for k in valid_keys})
 
-            # Adjust `is_terminal` to ensure it's 2D
-            if key == "is_terminal" and processed_episode[key].ndim == 1:
-                processed_episode[key] = processed_episode[key][
-                    :, np.newaxis
-                ]  # Reshape to (12000, 1)
-
-        # Debug: print each key's resulting shape and unique values
-        for key, arr in processed_episode.items():
+        for key in valid_keys:
             try:
-                arr_shape = np.asanyarray(arr).shape
-                arr_type = type(arr)
-                if isinstance(arr, np.ndarray) and arr.ndim == 1:
-                    # unique_values = np.unique(arr)
-                    # print(f"{key}: type={arr_type}, shape={arr_shape}, unique values={unique_values}")
-                    pass
-                else:
-                    print(f"{key}: type={arr_type}, shape={arr_shape}")
-            except Exception as e:
-                print(f"{key}: type={type(arr)} (shape not available) due to: {e}")
+                # 2. Get truncated values
+                trunc_value = episode[key][:length]
 
-        # Save the processed_episode to file.
+                # 3. Convert all elements to numpy arrays with consistent shapes
+                elements = []
+                for elem in trunc_value:
+                    # Handle Python scalars and zero-dim arrays
+                    if not isinstance(elem, np.ndarray):
+                        elem = np.array(elem)
+                    if elem.ndim == 0:
+                        elem = elem.reshape(1)  # Convert scalar to 1D array
+                    elements.append(elem)
+
+                # 4. Verify homogeneous shapes
+                shapes = [e.shape for e in elements]
+                unique_shapes = set(shapes)
+                if len(unique_shapes) > 1:
+                    raise ValueError(
+                        f"Mixed shapes in {key}: {unique_shapes} "
+                        f"First 5 shapes: {shapes[:5]}"
+                    )
+
+                # 5. Stack along time dimension
+                processed_episode[key] = np.stack(elements)
+
+                # 6. Ensure 2D shape for special keys
+                if key in ["is_first", "is_last", "is_terminal"]:
+                    if processed_episode[key].ndim == 1:
+                        processed_episode[key] = processed_episode[key][:, np.newaxis]
+
+                # Validation print
+                # print(f"  {key}:")
+                # print(f"    Final shape: {processed_episode[key].shape}")
+                # print(f"    Dtype: {processed_episode[key].dtype}")
+                # print(f"    Sample values: {processed_episode[key][0]}")
+
+            except Exception as e:
+                print(f"\n  Failed processing {key}: {str(e)}")
+                print(f"First 3 elements: {trunc_value[:3]}")
+                raise
+
+        # Final validation before save
+        print("\nFinal episode validation:")
+        for k, v in processed_episode.items():
+            print(f"  {k}: {type(v).__name__} {v.shape} {v.dtype}")
+
+        # Save and verify
         try:
             with io.BytesIO() as f1:
                 np.savez_compressed(f1, **processed_episode)
                 f1.seek(0)
                 with file_path.open("wb") as f2:
                     f2.write(f1.read())
+            print(f"✅ Saved {file_path}")
+
+            # Load verification
+            with np.load(file_path) as data:
+                print("\nReload verification:")
+                for k in data.keys():
+                    print(f"  {k}: {data[k].shape} {data[k].dtype}")
+
         except Exception as e:
-            print(f"Failed to save episode {file_path}: {e}")
+            print(f"  Failed to save {file_path}: {e}")
+            raise
 
     return True
 
 
 def from_generator(generator, batch_size):
+    # print("FROM GENERATOR")
+    # print(next(generator))
     while True:
         batch = []
         for _ in range(batch_size):
@@ -412,49 +428,89 @@ def from_generator(generator, batch_size):
             data[key] = []
             for i in range(batch_size):
                 data[key].append(batch[i][key])
+            # print("KEY from_generator")
+            # print(key)
+            # print(data[key])
             data[key] = np.stack(data[key], 0)
         yield data
 
 
-def sample_episodes(episodes, length, seed=0):
+def sample_episodes(episodes, batch_length, seed=0):
     np_random = np.random.RandomState(seed)
     while True:
-        size = 0
-        ret = None
-        p = np.array(
-            [len(next(iter(episode.values()))) for episode in episodes.values()]
-        )
-        p = p / np.sum(p)
-        while size < length:
-            episode = np_random.choice(list(episodes.values()), p=p)
-            total = len(next(iter(episode.values())))
-            # make sure at least one transition included
-            if total < 2:
+        batch = {k: [] for k in next(iter(episodes.values())).keys() if "log_" not in k}
+        total_steps = 0
+
+        # Weight episodes by their length
+        episode_lengths = [len(next(iter(e.values()))) for e in episodes.values()]
+        probs = np.array(episode_lengths, dtype=np.float32)
+        probs /= probs.sum()
+
+        while total_steps < batch_length:
+            # Select episode proportional to its length
+            episode = episodes[np_random.choice(len(episodes), p=probs)]
+            episode = {k: v for k, v in episode.items() if "log_" not in k}
+
+            # Get valid slice range
+            ep_length = len(next(iter(episode.values())))
+            if ep_length < 2:
                 continue
-            if not ret:
-                index = int(np_random.randint(0, total - 1))
-                ret = {
-                    k: v[index : min(index + length, total)].copy()
-                    for k, v in episode.items()
-                    if "log_" not in k
-                }
-                if "is_first" in ret:
-                    ret["is_first"][0] = True
-            else:
-                # 'is_first' comes after 'is_last'
-                index = 0
-                possible = length - size
-                ret = {
-                    k: np.append(
-                        ret[k], v[index : min(index + possible, total)].copy(), axis=0
+
+            available = batch_length - total_steps
+            start = np_random.randint(0, max(1, ep_length - available))
+            end = min(start + available, ep_length)
+
+            # Copy and convert data
+            for key in episode.keys():
+                slice_data = episode[key][start:end]
+
+                # Convert to numpy array if needed
+                if not isinstance(slice_data, np.ndarray):
+                    slice_data = np.array(slice_data)
+
+                # Handle scalar values and ensure 2D shape
+                if slice_data.ndim == 0:
+                    slice_data = slice_data[np.newaxis]
+                if slice_data.ndim == 1 and key in [
+                    "is_first",
+                    "is_last",
+                    "is_terminal",
+                ]:
+                    slice_data = slice_data[:, np.newaxis]
+
+                # Convert bools to float32
+                if slice_data.dtype == bool:
+                    slice_data = slice_data.astype(np.float32)
+
+                if not batch[key]:
+                    batch[key] = slice_data
+                else:
+                    # Verify shape compatibility
+                    if batch[key].shape[1:] != slice_data.shape[1:]:
+                        raise ValueError(
+                            f"Shape mismatch in {key}: "
+                            f"Existing {batch[key].shape[1:]}, "
+                            f"New {slice_data.shape[1:]}"
+                        )
+                    batch[key] = np.concatenate([batch[key], slice_data], axis=0)
+
+            # Update tracking
+            added = end - start
+            total_steps += added
+
+            # Handle episode boundaries
+            if "is_first" in batch:
+                if total_steps == added:  # First addition
+                    batch["is_first"][:] = 0.0
+                    batch["is_first"][0] = 1.0
+                else:
+                    new_first = np.zeros((added, 1), dtype=np.float32)
+                    new_first[0] = 1.0
+                    batch["is_first"] = np.concatenate(
+                        [batch["is_first"], new_first], axis=0
                     )
-                    for k, v in episode.items()
-                    if "log_" not in k
-                }
-                if "is_first" in ret:
-                    ret["is_first"][size] = True
-            size = len(next(iter(ret.values())))
-        yield ret
+
+        yield batch
 
 
 def load_episodes(directory, limit=None, reverse=True):
@@ -706,9 +762,13 @@ class Bernoulli:
         return self._dist.rsample(sample_shape)
 
     def log_prob(self, x):
+        x = x.squeeze(-1) if x.shape[-1] == 1 and x.shape[-2] == 1 else x
         _logits = self._dist.base_dist.logits
         log_probs0 = -F.softplus(_logits)
         log_probs1 = -F.softplus(-_logits)
+
+        # print(f"Processed x shape: {x.shape}")
+        # print(f"_logits shape: {_logits.shape}")
 
         return torch.sum(log_probs0 * (1 - x) + log_probs1 * x, -1)
 
@@ -894,21 +954,25 @@ def static_scan(fn, inputs, start):
     last = start
     indices = range(inputs[0].shape[0])
     flag = True
+    outputs = None  # Initialize to None explicitly
+
     for index in indices:
 
         def inp(x):
             return (_input[x] for _input in inputs)
 
-        last = fn(last, *inp(index))
-        if flag:
-            if last is dict:
+        current_inputs = list(inp(index))
+        last = fn(last, *current_inputs)
+
+        if flag:  # First iteration
+            if isinstance(last, dict):
                 outputs = {
                     key: value.clone().unsqueeze(0) for key, value in last.items()
                 }
             else:
                 outputs = []
-                for _last in last:
-                    if _last is dict:
+                for i, _last in enumerate(last):
+                    if isinstance(_last, dict):
                         outputs.append(
                             {
                                 key: value.clone().unsqueeze(0)
@@ -918,15 +982,15 @@ def static_scan(fn, inputs, start):
                     else:
                         outputs.append(_last.clone().unsqueeze(0))
             flag = False
-        else:
-            if last is dict:
+        else:  # Subsequent iterations
+            if isinstance(last, dict):
                 for key in last.keys():
                     outputs[key] = torch.cat(
                         [outputs[key], last[key].unsqueeze(0)], dim=0
                     )
             else:
                 for j in range(len(outputs)):
-                    if last[j] is dict:
+                    if isinstance(last[j], dict):
                         for key in last[j].keys():
                             outputs[j][key] = torch.cat(
                                 [outputs[j][key], last[j][key].unsqueeze(0)], dim=0
@@ -935,8 +999,13 @@ def static_scan(fn, inputs, start):
                         outputs[j] = torch.cat(
                             [outputs[j], last[j].unsqueeze(0)], dim=0
                         )
-    if last is dict:
+
+    if outputs is None:
+        raise RuntimeError("No outputs generated - empty inputs or failed processing")
+
+    if isinstance(last, dict):
         outputs = [outputs]
+
     return outputs
 
 

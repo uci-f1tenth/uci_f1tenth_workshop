@@ -245,7 +245,12 @@ def simulate(
                     logger.scalar("train_return", score)
                     logger.scalar("train_length", length)
                     logger.scalar("train_episodes", len(cache))
-                    logger.write(step=logger.step)
+                    try:
+                        current_step = agent.__self__._step
+                    except Exception:
+                        print("fallback")
+                        current_step = logger.step
+                    logger.write(step=current_step)
 
                 else:
                     if "eval_lengths" not in locals():
@@ -265,6 +270,11 @@ def simulate(
                         logger.scalar("eval_return", score)
                         logger.scalar("eval_length", length)
                         logger.scalar("eval_episodes", len(eval_scores))
+                        try:
+                            current_step = agent.__self__._step
+                        except Exception:
+                            print("fallback")
+                            current_step = logger.step
                         logger.write(step=logger.step)
                         eval_done = True
     if is_eval:

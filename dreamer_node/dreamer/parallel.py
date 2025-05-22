@@ -7,7 +7,7 @@ import traceback
 from functools import partial as bind
 from typing import Dict, Callable, Tuple, Any, List
 
-from racecar_env import Racecar  # type: ignore
+from .racecar_env import Racecar  # type: ignore
 
 
 class PMessage(enum.Enum):
@@ -81,9 +81,7 @@ class ProcessPipeWorker:
         except (AttributeError, AssertionError):
             pass
 
-    def _submit(
-        self, message: Message, payload: Tuple[tuple, Dict[str, Any]] | None = None
-    ) -> Future:
+    def _submit(self, message: Message, payload=None) -> Future:
         callid = self._nextid
         self._nextid += 1
         self._pipe.send((message, callid, payload))

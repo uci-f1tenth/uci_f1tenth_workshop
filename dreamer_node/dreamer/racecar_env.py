@@ -11,14 +11,14 @@ class Racecar:
         if train:
             self._env = gymnasium.make(
                 id="SingleAgentRaceEnv-v0",
-                scenario="gyms/racecar_gym/scenarios/austria.yml",
+                scenario="uci_f1tenth_workshop/gyms/racecar_gym/scenarios/austria.yml",
                 render_mode="rgb_array_follow",  # optional
                 render_options=dict(width=320, height=240, agent="A"),  # optional
             )
         else:
             self._env = gymnasium.make(
                 id="SingleAgentRaceEnv-v0",
-                scenario="gyms/racecar_gym/scenarios/austria.yml",
+                scenario="uci_f1tenth_workshop/gyms/racecar_gym/scenarios/austria.yml",
                 render_mode="rgb_array_follow",  # optional
                 render_options=dict(width=320, height=240, agent="A"),  # optional
             )
@@ -29,7 +29,7 @@ class Racecar:
             mode = "rgb_array_follow"
         self._env = gymnasium.make(
             id="SingleAgentRaceEnv-v0",
-            scenario="gyms/racecar_gym/scenarios/austria.yml",
+            scenario="uci_f1tenth_workshop/gyms/racecar_gym/scenarios/austria.yml",
             render_mode=mode,
             render_options=dict(width=320, height=240, agent="A"),  # optional
         )

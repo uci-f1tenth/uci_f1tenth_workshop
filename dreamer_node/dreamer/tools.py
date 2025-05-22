@@ -132,15 +132,15 @@ class Logger:
 
 def simulate(
     agent: Callable[[Any, Any, Any], Tuple[Dict[str, Any], None]],
-    envs: List[Parallel] | List[Damy],
+    envs,
     cache: collections.OrderedDict,
     directory: Path,
     logger: Logger,
     is_eval=False,
-    limit: int | None = None,
+    limit=None,
     steps=0,
     episodes=0,
-    state: Tuple[int, int, np.ndarray, float, list, tuple, list] | None = None,
+    state=None,
 ) -> Tuple[int, int, np.ndarray, float, list, tuple, list]:
     done: np.ndarray
     length: np.ndarray | float

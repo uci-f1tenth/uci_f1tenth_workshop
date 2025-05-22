@@ -15,8 +15,8 @@ from torch.nn import functional as F
 from torch import distributions as torchd
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from config import Config  # type: ignore
-from parallel import Parallel, Damy  # type: ignore
+from .config import Config  # type: ignore
+from .parallel import Parallel, Damy  # type: ignore
 
 config = Config()
 

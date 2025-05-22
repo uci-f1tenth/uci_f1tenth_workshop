@@ -3,8 +3,8 @@ from pathlib import Path
 
 class Config:
     LOG_DIRECTORY = Path("./logdir/f1tenth")
-    TRAINING_DIRECTORY: Path | None = None  # Path("/dreamer/resource/train")
-    EVALUATION_DIRECTORY: Path | None = None  # Path("/dreamer/resource/eval")
+    TRAINING_DIRECTORY = None  # Path("/dreamer/resource/train")
+    EVALUATION_DIRECTORY = None  # Path("/dreamer/resource/eval")
     OFFLINE_TRAINING_DIRECTORY = ""  # "/dreamer/resource/train"
     OFFLINE_EVALUATION_DIRECTORY = ""  # "/dreamer/resource/eval"
     SEED = 0
@@ -15,7 +15,7 @@ class Config:
     EVALUATION_EPISODE_NUMBER = 1
     LOG_EVERY = int(1e4)
     RESET_EVERY = 0
-    DEVICE = "cuda:0"
+    DEVICE = "cpu"
     COMPILE = True
     PRECISION = 32
     DEBUG = False
@@ -148,3 +148,14 @@ class Config:
     DISAGREE_LAYERS = 4
     DISAGREE_UNITS = 400
     DISAGREE_ACTION_CONDITION = False
+
+
+class Ros2Config:
+    # Lidar
+    LIDAR_RAYS = 1080
+    LIDAR_RANGE = 15.0
+    LIDAR_MIN_RANGE = 0.25
+
+    # Driving
+    STEER_CONVERSION = 1  # TODO determine
+    SPEED_CONVERSION = 1  # TODO determine

@@ -1,6 +1,5 @@
 import argparse
 import os
-import sys
 import pathlib
 import functools
 from typing import Generator, NoReturn, Any, Dict, Tuple, List
@@ -12,14 +11,13 @@ import torch
 from torch import nn
 from torch import distributions as torchd
 
-import tools  # type: ignore
-import models  # type: ignore
-from config import Config  # type: ignore
-import exploration as expl  # type: ignore
-from racecar_env import Racecar  # type: ignore
-from parallel import Parallel, Damy  # type: ignore
+from . import tools
+from . import models
+from .config import Config
+from . import exploration as expl
+from .parallel import Parallel, Damy
+from .racecar_env import Racecar
 
-sys.path.append(str(pathlib.Path(__file__).parent.parent))
 import racecar_gym.envs.gym_api  # type: ignore # noqa: F401
 
 

@@ -7,8 +7,8 @@ import torch.nn.functional as F
 from torch import nn
 from torch import distributions as torchd
 
-import tools  # type: ignore
-from config import Config  # type: ignore
+from . import tools  # type: ignore
+from .config import Config  # type: ignore
 
 config = Config()
 

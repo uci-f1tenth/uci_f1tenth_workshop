@@ -5,10 +5,10 @@ import torch
 from torch import nn
 from torch import distributions as torchd
 
-import tools  # type: ignore
-import models  # type: ignore
-import networks  # type: ignore
-from config import Config  # type: ignore
+from . import tools  # type: ignore
+from . import models  # type: ignore
+from . import networks  # type: ignore
+from .config import Config  # type: ignore
 
 
 class Random(nn.Module):

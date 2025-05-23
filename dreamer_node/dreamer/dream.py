@@ -38,7 +38,9 @@ class Dreamer(nn.Module):
     ):
         super(Dreamer, self).__init__()
         self._config = config
+        print(f'config initialized to {config}')
         self._logger = logger
+        print(f'logger initialized to {logger}')
         self._should_log = tools.Every(config.LOG_EVERY)
         batch_steps = config.BATCH_SIZE * config.BATCH_LENGTH
         self._should_train = tools.Every(batch_steps / config.TRAIN_RATIO)
@@ -50,7 +52,9 @@ class Dreamer(nn.Module):
         self._metrics: Dict[str, int | list] = {}
         self._step = logger.step // config.ACTION_REPEAT
         self._update_count = 0
+        print(f'update count initialized to {_update_count}')
         self._dataset = dataset
+        print(f'data set initialized to {_dataset}')
 
         # World Model (modified for vector observations)
         self._wm = models.WorldModel(obs_space, act_space, self._step, config)
@@ -79,6 +83,7 @@ class Dreamer(nn.Module):
         step = self._step
 
         if training:
+            print('training...')
             # Training logic (unchanged core)
             steps = (
                 self._config.PRETRAIN
@@ -114,8 +119,10 @@ class Dreamer(nn.Module):
         # Simplified for continuous control
         if state is None:
             latent = action = None
+            print(f'latent & action= None')
         else:
             latent, action = state
+            print(f'latent & action& state= {state}')
 
         obs = self._wm.preprocess(obs)
         embed = self._wm.encoder(obs)  # MLP encoder only
@@ -141,23 +148,33 @@ class Dreamer(nn.Module):
         # Continuous action selection
         if not training:
             actor = self._task_behavior.actor(feat)
+            print(f'actor: {actor}')
             action = actor.mode()
+            print(f'action{action}')
 
         elif self._should_expl(self._step):
             actor = self._expl_behavior.actor(feat)
+            print(f'actor: {actor}')
             action = actor.sample()
+            print(f'action: {action}')
 
         else:
             actor = self._task_behavior.actor(feat)
+            print(f'actor: {actor}')
             action = actor.sample()
+            print(f'action{action}')
 
         logprob = actor.log_prob(action)
         latent = {k: v.detach() for k, v in latent.items()}
+        print(f'latent: {latent}')
         action = action.detach()
+        print(f'action: {action}')
 
         # Removed discrete action conversion
         policy_output = {"action": action, "logprob": logprob}
+        print(f'policy output: {policy_output}')
         state = (latent, action)
+        print(f'state: {state}')
         return policy_output, state
 
     def _train(self, data):
@@ -165,19 +182,24 @@ class Dreamer(nn.Module):
         metrics = {}
         post, context, mets = self._wm._train(data)
         metrics.update(mets)
+        print(f'metrics: {metrics}')
         start = post
+        print(f'start: {start}')
 
         def reward(f, s, a):
             return self._wm.heads["reward"](self._wm.dynamics.get_feat(s)).mode()
 
         metrics.update(self._task_behavior._train(start, reward)[-1])
+        print(f'metrics: {metrics}')
 
         if self._config.EXPLORATION_BEHAVIOR != "greedy":
             mets = self._expl_behavior.train(start, context, data)[-1]
             metrics.update({"expl_" + key: value for key, value in mets.items()})
+            print(f'metrics: {metrics}')
 
         for name, value in metrics.items():
             self._metrics.setdefault(name, []).append(value)
+        print(f'metrics: {metrics}')
 
 
 def count_steps(folder):
@@ -187,6 +209,7 @@ def count_steps(folder):
 def make_dataset(episodes, config: Config):
     generator = tools.sample_episodes(episodes, config.BATCH_LENGTH)
     dataset = tools.from_generator(generator, config.BATCH_SIZE)
+    print(f'dataset: {dataset}')
     return dataset
 
 
@@ -208,7 +231,9 @@ def main(config: Config):
     config.TRAINING_DIRECTORY.mkdir(parents=True, exist_ok=True)
     config.EVALUATION_DIRECTORY.mkdir(parents=True, exist_ok=True)
     step = count_steps(config.TRAINING_DIRECTORY)
+    print(f'step: {step}')
     logger = tools.Logger(logdir, config.ACTION_REPEAT * step)
+    print(f'logger: {logger}')
 
     # GUI initialization
     parser = argparse.ArgumentParser()
@@ -258,13 +283,16 @@ def main(config: Config):
         for key in acts.spaces:
             action_lows.append(torch.tensor(acts[key].low))
             action_highs.append(torch.tensor(acts[key].high))
-
+        print(f'action lows: {action_lows}')
+        print(f'action highs: {action_highs}')
         # Concatenate lows/highs across action components
         action_low = torch.cat(action_lows).repeat(config.ENVIRONMENT_COUNT, 1)
         action_high = torch.cat(action_highs).repeat(config.ENVIRONMENT_COUNT, 1)
         random_actor = torchd.independent.Independent(
             torchd.uniform.Uniform(action_low, action_high), 1
         )
+        print(f'action lows: {action_lows}')
+        print(f'action highs: {action_highs}')
 
         # In the simulation lambda, return a dictionary with action keys
         state = tools.simulate(

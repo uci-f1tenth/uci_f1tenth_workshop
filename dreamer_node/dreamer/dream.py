@@ -7,6 +7,7 @@ from typing import Generator, NoReturn, Any, Dict, Tuple, List
 
 import numpy as np
 import gymnasium.spaces
+import argparse
 
 import torch
 from torch import nn
@@ -357,5 +358,16 @@ def main(config: Config):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--device",
+        type=str,
+        default="cuda:0",
+        help="Torch device (e.g., 'cpu', 'cuda:0')",
+    )
+    args = parser.parse_args()
+
     config = Config()
+    config.DEVICE = args.device  # 🧠 This now controls everything!
+    print(f"Using device: {config.DEVICE}")
     main(config)
